@@ -21,15 +21,15 @@ export default defineConfig(
     },
   },
   {
-    name: "@repo/eslint-config/allow-unnecessary-assertion-in-plugin-exports/rules",
     files: ["src/*.ts"],
+    name: "@repo/eslint-config/allow-unnecessary-assertion-in-plugin-exports/rules",
     rules: {
       "@typescript-eslint/no-unnecessary-type-assertion": "off",
     },
   },
   {
-    name: "@repo/eslint-config/forbidden-unnecessary-assertion-in-plugin-api/rules",
     files: ["src/api.ts"],
+    name: "@repo/eslint-config/forbidden-unnecessary-assertion-in-plugin-api/rules",
     rules: {
       "@typescript-eslint/no-unnecessary-type-assertion": "error",
     },
