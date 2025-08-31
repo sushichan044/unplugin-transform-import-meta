@@ -5,7 +5,6 @@ export default defineConfig({
   clean: true,
   dts: true,
   entry: ["./src/*.ts"],
-  fixedExtension: true,
   format: "esm",
   fromVite: true,
   minify: "dce-only",
