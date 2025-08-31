@@ -4,7 +4,7 @@
  * @module
  */
 
-import { Starter } from "./index";
+import { unpluginResolveImportMeta } from "./index";
 
 /**
  * Rollup plugin
@@ -12,13 +12,13 @@ import { Starter } from "./index";
  * @example
  * ```ts
  * // rollup.config.js
- * import Starter from 'unplugin-resolve-import-meta/rollup'
+ * import unpluginResolveImportMeta from 'unplugin-resolve-import-meta/rollup'
  *
  * export default {
- *   plugins: [Starter()],
+ *   plugins: [unpluginResolveImportMeta()],
  * }
  * ```
  */
-const rollup = Starter.rollup as typeof Starter.rollup;
+const rollup = unpluginResolveImportMeta.rollup as typeof unpluginResolveImportMeta.rollup;
 export default rollup;
 export { rollup as "module.exports" };

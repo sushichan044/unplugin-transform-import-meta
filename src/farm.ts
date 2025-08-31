@@ -4,7 +4,7 @@
  * @module
  */
 
-import { Starter } from "./index";
+import { unpluginResolveImportMeta } from "./index";
 
 /**
  * Farm plugin
@@ -19,6 +19,6 @@ import { Starter } from "./index";
  * }
  * ```
  */
-const farm = Starter.farm as typeof Starter.farm;
+const farm = unpluginResolveImportMeta.farm as typeof unpluginResolveImportMeta.farm;
 export default farm;
 export { farm as "module.exports" };

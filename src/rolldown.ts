@@ -4,7 +4,7 @@
  * @module
  */
 
-import { Starter } from "./index";
+import { unpluginResolveImportMeta } from "./index";
 
 /**
  * Rolldown plugin
@@ -19,6 +19,6 @@ import { Starter } from "./index";
  * }
  * ```
  */
-const rolldown = Starter.rolldown as typeof Starter.rolldown;
+const rolldown = unpluginResolveImportMeta.rolldown as typeof unpluginResolveImportMeta.rolldown;
 export default rolldown;
 export { rolldown as "module.exports" };

@@ -4,7 +4,7 @@
  * @module
  */
 
-import { Starter } from "./index";
+import { unpluginResolveImportMeta } from "./index";
 
 /**
  * Webpack plugin
@@ -19,6 +19,6 @@ import { Starter } from "./index";
  * }
  * ```
  */
-const webpack = Starter.webpack as typeof Starter.webpack;
+const webpack = unpluginResolveImportMeta.webpack as typeof unpluginResolveImportMeta.webpack;
 export default webpack;
 export { webpack as "module.exports" };
