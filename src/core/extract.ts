@@ -1,5 +1,7 @@
-import type { MemberExpression, Program } from "estree";
+import type { TSESTree } from "@typescript-eslint/typescript-estree";
+import type { Program } from "estree";
 
+import { AST_NODE_TYPES } from "@typescript-eslint/typescript-estree";
 import { walk } from "estree-walker";
 
 import type { LiteralValue, ResolveRules } from "./options";
@@ -29,18 +31,25 @@ export interface ImportMetaAnalysisResult {
 }
 
 export function extractImportMetaReplacements(
-  ast: Program,
+  ast: TSESTree.Program,
   resolveRules: ResolveRules,
 ): ImportMetaAnalysisResult {
   const transformations: CodeReplacement[] = [];
   const warnings: ExtractionWarning[] = [];
 
-  walk(ast, {
-    enter(node) {
-      if (node.type === "MemberExpression") {
-        const memberExpr = node;
+  walk(ast as Program, {
+    enter(child: TSESTree.Node) {
+      if (
+        child.type !== AST_NODE_TYPES.MemberExpression &&
+        child.type !== AST_NODE_TYPES.CallExpression
+      ) {
+        return;
+      }
 
-        if (isImportMetaExpression(memberExpr) && node.range) {
+      if (child.type === AST_NODE_TYPES.MemberExpression) {
+        const memberExpr = child;
+
+        if (isImportMetaExpression(memberExpr)) {
           const accessPath = getAccessPath(memberExpr);
 
           if (
@@ -51,19 +60,18 @@ export function extractImportMetaReplacements(
               resolveRules.properties[accessPath],
             );
             transformations.push({
-              end: node.range[1],
+              end: child.range[1],
               replacement,
-              start: node.range[0],
+              start: child.range[0],
             });
           }
         }
-      } else if (node.type === "CallExpression") {
-        const callExpr = node;
+      } else {
+        const callExpr = child;
 
         if (
-          callExpr.callee.type === "MemberExpression" &&
-          isImportMetaExpression(callExpr.callee) &&
-          node.range
+          callExpr.callee.type === AST_NODE_TYPES.MemberExpression &&
+          isImportMetaExpression(callExpr.callee)
         ) {
           const methodPath = getAccessPath(callExpr.callee);
 
@@ -75,7 +83,7 @@ export function extractImportMetaReplacements(
             const nonLiteralArgs: Array<{ index: number; type: string }> = [];
 
             callExpr.arguments.forEach((arg, index) => {
-              if (arg.type === "Literal") {
+              if (arg.type === AST_NODE_TYPES.Literal) {
                 literalArgs.push(arg.value);
               } else {
                 literalArgs.push(null);
@@ -85,11 +93,11 @@ export function extractImportMetaReplacements(
 
             if (nonLiteralArgs.length > 0) {
               warnings.push({
-                end: node.range[1],
+                end: child.range[1],
                 message: `Method ${methodPath} called with non-literal arguments`,
                 methodName: methodPath,
                 nonLiteralArgs,
-                start: node.range[0],
+                start: child.range[0],
               });
             }
 
@@ -98,9 +106,9 @@ export function extractImportMetaReplacements(
               const replacement = JSON.stringify(result);
 
               transformations.push({
-                end: node.range[1],
+                end: child.range[1],
                 replacement,
-                start: node.range[0],
+                start: child.range[0],
               });
             } catch (error) {
               console.warn(`Failed to execute method ${methodPath}:`, error);
@@ -117,24 +125,24 @@ export function extractImportMetaReplacements(
   };
 }
 
-function findImportMetaPath(node: MemberExpression): string[] {
+function findImportMetaPath(node: TSESTree.MemberExpression): string[] {
   const path: string[] = [];
   let current = node;
 
-  while (current.type === "MemberExpression") {
-    if (current.property.type === "Identifier") {
+  while (current.type === AST_NODE_TYPES.MemberExpression) {
+    if (current.property.type === AST_NODE_TYPES.Identifier) {
       path.unshift(current.property.name);
     }
 
     if (
-      current.object.type === "MetaProperty" &&
+      current.object.type === AST_NODE_TYPES.MetaProperty &&
       current.object.meta.name === "import" &&
       current.object.property.name === "meta"
     ) {
       return path;
     }
 
-    if (current.object.type === "MemberExpression") {
+    if (current.object.type === AST_NODE_TYPES.MemberExpression) {
       current = current.object;
     } else {
       break;
@@ -144,12 +152,12 @@ function findImportMetaPath(node: MemberExpression): string[] {
   return [];
 }
 
-function isImportMetaExpression(node: MemberExpression): boolean {
+function isImportMetaExpression(node: TSESTree.MemberExpression): boolean {
   const path = findImportMetaPath(node);
   return path.length > 0;
 }
 
-function getAccessPath(node: MemberExpression): string | null {
+function getAccessPath(node: TSESTree.MemberExpression): string | null {
   const path = findImportMetaPath(node);
   return path.length > 0 ? path.join(".") : null;
 }
