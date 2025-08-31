@@ -40,75 +40,78 @@ export function extractImportMetaReplacements(
     ast,
     {},
     {
-      MemberExpression: (node) => {
-        const memberExpr = node;
+      MemberExpression: (node, c) => {
+        if (!isImportMetaExpression(node)) {
+          c.stop();
+          return;
+        }
 
-        if (isImportMetaExpression(memberExpr)) {
-          const accessPath = getAccessPath(memberExpr);
-
-          if (
-            isNonEmptyString(accessPath) &&
-            resolveRules.properties?.[accessPath] !== undefined
-          ) {
-            const replacement = JSON.stringify(
-              resolveRules.properties[accessPath],
-            );
-            transformations.push({
-              end: memberExpr.range[1],
-              replacement,
-              start: memberExpr.range[0],
-            });
-          }
+        const accessPath = getAccessPath(node);
+        if (
+          isNonEmptyString(accessPath) &&
+          resolveRules.properties?.[accessPath] !== undefined
+        ) {
+          const replacement = JSON.stringify(
+            resolveRules.properties[accessPath],
+          );
+          transformations.push({
+            end: node.range[1],
+            replacement,
+            start: node.range[0],
+          });
         }
       },
 
-      CallExpression: (node) => {
-        const callExpr = node;
+      CallExpression: (node, c) => {
+        if (
+          !(
+            node.callee.type === AST_NODE_TYPES.MemberExpression &&
+            isImportMetaExpression(node.callee)
+          )
+        ) {
+          c.stop();
+          return;
+        }
+
+        const methodPath = getAccessPath(node.callee);
 
         if (
-          callExpr.callee.type === AST_NODE_TYPES.MemberExpression &&
-          isImportMetaExpression(callExpr.callee)
+          isNonEmptyString(methodPath) &&
+          resolveRules.methods?.[methodPath]
         ) {
-          const methodPath = getAccessPath(callExpr.callee);
+          const literalArgs: Array<LiteralValue | null> = [];
+          const nonLiteralArgs: Array<{ index: number; type: string }> = [];
 
-          if (
-            isNonEmptyString(methodPath) &&
-            resolveRules.methods?.[methodPath]
-          ) {
-            const literalArgs: Array<LiteralValue | null> = [];
-            const nonLiteralArgs: Array<{ index: number; type: string }> = [];
-
-            for (const [index, args] of callExpr.arguments.entries()) {
-              if (args.type === AST_NODE_TYPES.Literal) {
-                literalArgs.push(args.value);
-              } else {
-                literalArgs.push(null);
-                nonLiteralArgs.push({ index, type: args.type });
-              }
+          for (const [index, args] of node.arguments.entries()) {
+            if (args.type === AST_NODE_TYPES.Literal) {
+              literalArgs.push(args.value);
+            } else {
+              literalArgs.push(null);
+              nonLiteralArgs.push({ index, type: args.type });
             }
+          }
 
-            if (nonLiteralArgs.length > 0) {
-              warnings.push({
-                end: callExpr.range[1],
-                message: `Method ${methodPath} called with non-literal arguments`,
-                methodName: methodPath,
-                nonLiteralArgs,
-                start: callExpr.range[0],
-              });
-            }
+          if (nonLiteralArgs.length > 0) {
+            warnings.push({
+              end: node.range[1],
+              message: `Method ${methodPath} called with non-literal arguments`,
+              methodName: methodPath,
+              nonLiteralArgs,
+              start: node.range[0],
+            });
+          }
 
-            try {
-              const result = resolveRules.methods[methodPath](...literalArgs);
-              const replacement = JSON.stringify(result);
+          try {
+            const result = resolveRules.methods[methodPath](...literalArgs);
+            const replacement = JSON.stringify(result);
 
-              transformations.push({
-                end: callExpr.range[1],
-                replacement,
-                start: callExpr.range[0],
-              });
-            } catch (error) {
-              console.warn(`Failed to execute method ${methodPath}:`, error);
-            }
+            transformations.push({
+              end: node.range[1],
+              replacement,
+              start: node.range[0],
+            });
+          } catch (error) {
+            console.warn(`Failed to execute method ${methodPath}:`, error);
           }
         }
       },
