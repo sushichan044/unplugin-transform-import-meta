@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe } from "vitest";
 
 import type { MethodFunction } from "../src/core/options";
+
 import unpluginResolveImportMeta from "../src/rollup";
 
 describe("rollup", async () => {

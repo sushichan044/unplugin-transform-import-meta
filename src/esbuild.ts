@@ -4,7 +4,7 @@
  * @module
  */
 
-import { unpluginResolveImportMeta } from "./index";
+import { unpluginTransformImportMeta } from "./index";
 
 /**
  * Esbuild plugin
@@ -12,11 +12,12 @@ import { unpluginResolveImportMeta } from "./index";
  * @example
  * ```ts
  * import { build } from 'esbuild'
- * import Starter from 'unplugin-resolve-import-meta/esbuild'
+ * import Starter from 'unplugin-transform-import-meta/esbuild'
  *
  * build({ plugins: [Starter()] })
 ```
  */
-const esbuild = unpluginResolveImportMeta.esbuild as typeof unpluginResolveImportMeta.esbuild;
+const esbuild =
+  unpluginTransformImportMeta.esbuild as typeof unpluginTransformImportMeta.esbuild;
 export default esbuild;
 export { esbuild as "module.exports" };

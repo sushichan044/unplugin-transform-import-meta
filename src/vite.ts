@@ -4,7 +4,7 @@
  * @module
  */
 
-import { unpluginResolveImportMeta } from "./index";
+import { unpluginTransformImportMeta } from "./index";
 
 /**
  * Vite plugin
@@ -12,13 +12,14 @@ import { unpluginResolveImportMeta } from "./index";
  * @example
  * ```ts
  * // vite.config.ts
- * import unpluginResolveImportMeta from 'unplugin-resolve-import-meta/vite'
+ * import unpluginResolveImportMeta from 'unplugin-transform-import-meta/vite'
  *
  * export default defineConfig({
  *   plugins: [unpluginResolveImportMeta()],
  * })
  * ```
  */
-const vite = unpluginResolveImportMeta.vite as typeof unpluginResolveImportMeta.vite;
+const vite =
+  unpluginTransformImportMeta.vite as typeof unpluginTransformImportMeta.vite;
 export default vite;
 export { vite as "module.exports" };

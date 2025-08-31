@@ -13,7 +13,7 @@ import { transformWithReplacements } from "./core/replacement";
 
 export type { Options, ResolveRules } from "./core/options";
 
-export const unpluginResolveImportMeta: UnpluginInstance<
+export const unpluginTransformImportMeta: UnpluginInstance<
   Options | undefined,
   false
 > = createUnplugin((rawOptions = {}) => {
@@ -71,4 +71,4 @@ export const unpluginResolveImportMeta: UnpluginInstance<
   };
 });
 
-export default unpluginResolveImportMeta;
+export default unpluginTransformImportMeta;

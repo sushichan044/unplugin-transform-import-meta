@@ -4,7 +4,7 @@
  * @module
  */
 
-import { unpluginResolveImportMeta } from "./index";
+import { unpluginTransformImportMeta } from "./index";
 
 /**
  * Rspack plugin
@@ -12,13 +12,14 @@ import { unpluginResolveImportMeta } from "./index";
  * @example
  * ```js
  * // rspack.config.js
- * import Starter from 'unplugin-resolve-import-meta/rspack'
+ * import Starter from 'unplugin-transform-import-meta/rspack'
  *
  * default export {
  *  plugins: [Starter()],
  * }
  * ```
  */
-const rspack = unpluginResolveImportMeta.rspack as typeof unpluginResolveImportMeta.rspack;
+const rspack =
+  unpluginTransformImportMeta.rspack as typeof unpluginTransformImportMeta.rspack;
 export default rspack;
 export { rspack as "module.exports" };

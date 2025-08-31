@@ -1,5 +1,5 @@
 {
-  "name": "unplugin-resolve-import-meta",
+  "name": "unplugin-transform-import-meta",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -16,13 +16,13 @@
     "esbuild",
     "farm"
   ],
-  "homepage": "https://github.com/sushichan044/unplugin-resolve-import-meta#readme",
+  "homepage": "https://github.com/sushichan044/unplugin-transform-import-meta#readme",
   "bugs": {
-    "url": "https://github.com/sushichan044/unplugin-resolve-import-meta/issues"
+    "url": "https://github.com/sushichan044/unplugin-transform-import-meta/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sushichan044/unplugin-resolve-import-meta.git"
+    "url": "git+https://github.com/sushichan044/unplugin-transform-import-meta.git"
   },
   "author": {
     "name": "sushichan044",
@@ -34,9 +34,7 @@
     "provenance": true
   },
   "funding": "https://github.com/sponsors/sushichan044",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -54,10 +52,7 @@
   },
   "typesVersions": {
     "*": {
-      "*": [
-        "./dist/*",
-        "./*"
-      ]
+      "*": ["./dist/*", "./*"]
     }
   },
   "scripts": {

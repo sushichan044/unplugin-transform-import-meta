@@ -1,4 +1,4 @@
-# unplugin-resolve-import-meta
+# unplugin-transform-import-meta
 
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
@@ -13,10 +13,10 @@ Starter template for [unplugin](https://github.com/unjs/unplugin).
 To use this template, clone it down using:
 
 ```bash
-npx degit sushichan044/unplugin-resolve-import-meta unplugin-my-plugin
+npx degit sushichan044/unplugin-transform-import-meta unplugin-my-plugin
 ```
 
-And do a global replacement of `unplugin-resolve-import-meta` with your plugin name.
+And do a global replacement of `unplugin-transform-import-meta` with your plugin name.
 
 Then you can start developing your unplugin 🔥
 
@@ -28,7 +28,7 @@ To release a new version, run: `pnpm run release`.
 ## Installation
 
 ```bash
-npm i -D unplugin-resolve-import-meta
+npm i -D unplugin-transform-import-meta
 ```
 
 <details>
@@ -36,7 +36,7 @@ npm i -D unplugin-resolve-import-meta
 
 ```ts
 // vite.config.ts
-import Starter from 'unplugin-resolve-import-meta/vite'
+import Starter from 'unplugin-transform-import-meta/vite'
 
 export default defineConfig({
   plugins: [Starter()],
@@ -50,7 +50,7 @@ export default defineConfig({
 
 ```ts
 // rollup.config.js
-import Starter from 'unplugin-resolve-import-meta/rollup'
+import Starter from 'unplugin-transform-import-meta/rollup'
 
 export default {
   plugins: [Starter()],
@@ -64,7 +64,7 @@ export default {
 
 ```ts
 // rolldown.config.js
-import Starter from 'unplugin-resolve-import-meta/rolldown'
+import Starter from 'unplugin-transform-import-meta/rolldown'
 
 export default {
   plugins: [Starter()],
@@ -78,7 +78,7 @@ export default {
 
 ```ts
 import { build } from 'esbuild'
-import Starter from 'unplugin-resolve-import-meta/esbuild'
+import Starter from 'unplugin-transform-import-meta/esbuild'
 
 build({
   plugins: [Starter()],
@@ -92,7 +92,7 @@ build({
 
 ```js
 // webpack.config.js
-import Starter from 'unplugin-resolve-import-meta/webpack'
+import Starter from 'unplugin-transform-import-meta/webpack'
 
 export default {
   /* ... */
@@ -107,7 +107,7 @@ export default {
 
 ```ts
 // rspack.config.js
-import Starter from 'unplugin-resolve-import-meta/rspack'
+import Starter from 'unplugin-transform-import-meta/rspack'
 
 export default {
   /* ... */
@@ -131,9 +131,9 @@ export default {
 
 <!-- Badges -->
 
-[npm-version-src]: https://img.shields.io/npm/v/unplugin-resolve-import-meta.svg
-[npm-version-href]: https://npmjs.com/package/unplugin-resolve-import-meta
-[npm-downloads-src]: https://img.shields.io/npm/dm/unplugin-resolve-import-meta
-[npm-downloads-href]: https://www.npmcharts.com/compare/unplugin-resolve-import-meta?interval=30
-[unit-test-src]: https://github.com/sushichan044/unplugin-resolve-import-meta/actions/workflows/unit-test.yml/badge.svg
-[unit-test-href]: https://github.com/sushichan044/unplugin-resolve-import-meta/actions/workflows/unit-test.yml
+[npm-version-src]: https://img.shields.io/npm/v/unplugin-transform-import-meta.svg
+[npm-version-href]: https://npmjs.com/package/unplugin-transform-import-meta
+[npm-downloads-src]: https://img.shields.io/npm/dm/unplugin-transform-import-meta
+[npm-downloads-href]: https://www.npmcharts.com/compare/unplugin-transform-import-meta?interval=30
+[unit-test-src]: https://github.com/sushichan044/unplugin-transform-import-meta/actions/workflows/unit-test.yml/badge.svg
+[unit-test-href]: https://github.com/sushichan044/unplugin-transform-import-meta/actions/workflows/unit-test.yml
