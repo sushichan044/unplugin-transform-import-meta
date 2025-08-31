@@ -1,5 +1,3 @@
-import type { Program } from "estree";
-
 import { describe, expect, it } from "vitest";
 
 import type { ResolveRules } from "../src/core/options";
@@ -90,10 +88,7 @@ describe("extractImportMetaReplacements", () => {
       resolveRules,
     }) => {
       const ast = parseProgram(code.trim());
-      const result = extractImportMetaReplacements(
-        ast as Program,
-        resolveRules,
-      );
+      const result = extractImportMetaReplacements(ast, resolveRules);
 
       expect(result.replacements).toHaveLength(expectedReplacements);
       expect(result.warnings).toHaveLength(expectedWarnings);
@@ -126,7 +121,7 @@ const resolved = import.meta.resolve('./file');
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(3);
     expect(result.warnings).toHaveLength(0);
 
@@ -156,7 +151,7 @@ const config = {
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(2);
     expect(result.warnings).toHaveLength(0);
 
@@ -184,7 +179,7 @@ const mixed = import.meta.resolve("literal", someVar, 123);
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
 
     expect(result.warnings).toMatchInlineSnapshot(`
       [

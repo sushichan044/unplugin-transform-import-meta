@@ -1,5 +1,3 @@
-import type { Program } from "estree";
-
 import { parse } from "@typescript-eslint/typescript-estree";
 import MagicString from "magic-string";
 import { describe, expect, it } from "vitest";
@@ -19,7 +17,7 @@ describe("extractImportMetaReplacements", () => {
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(1);
     expect(result.warnings).toHaveLength(0);
 
@@ -44,7 +42,7 @@ describe("extractImportMetaReplacements", () => {
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(1);
     expect(result.warnings).toHaveLength(0);
     expect(result.replacements[0]).toMatchObject({
@@ -85,7 +83,7 @@ const resolved = import.meta.resolve('./file');
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(3);
     expect(result.warnings).toHaveLength(0);
 
@@ -124,7 +122,7 @@ const resolved = import.meta.resolve('./file');
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(0);
     expect(result.warnings).toHaveLength(0);
   });
@@ -159,7 +157,7 @@ const config = {
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(2);
     expect(result.warnings).toHaveLength(0);
 
@@ -202,7 +200,7 @@ const mixed = import.meta.resolve("literal", someVar, 123);
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
 
     expect(result.warnings).toHaveLength(2);
 
@@ -240,7 +238,7 @@ const mixed = import.meta.api.version;
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(2);
     expect(result.warnings).toHaveLength(0);
 
@@ -270,7 +268,7 @@ const config = import.meta.env.get("NODE_ENV");
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(2);
     expect(result.warnings).toHaveLength(0);
 
@@ -302,7 +300,7 @@ const nested = import.meta.api.version;
       },
     };
 
-    const result = extractImportMetaReplacements(ast as Program, resolveRules);
+    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(3);
     expect(result.warnings).toHaveLength(0);
 

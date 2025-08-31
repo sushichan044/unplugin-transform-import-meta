@@ -34,9 +34,7 @@
     "provenance": true
   },
   "funding": "https://github.com/sponsors/sushichan044",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -54,10 +52,7 @@
   },
   "typesVersions": {
     "*": {
-      "*": [
-        "./dist/*",
-        "./*"
-      ]
+      "*": ["./dist/*", "./*"]
     }
   },
   "scripts": {
@@ -81,7 +76,6 @@
     "@arethetypeswrong/core": "0.18.2",
     "@biomejs/biome": "2.2.2",
     "@sxzz/test-utils": "^0.5.10",
-    "@types/estree": "1.0.8",
     "@types/node": "24.3.0",
     "@virtual-live-lab/eslint-config": "2.2.24",
     "@virtual-live-lab/tsconfig": "2.1.21",

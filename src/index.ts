@@ -1,4 +1,3 @@
-import type { Program } from "estree";
 import type { UnpluginInstance } from "unplugin";
 
 import { createUnplugin } from "unplugin";
@@ -45,7 +44,7 @@ export const unpluginTransformImportMeta: UnpluginInstance<
           const ast = parseProgram(code);
 
           const result = extractImportMetaReplacements(
-            ast as Program,
+            ast,
             options.resolveRules,
           );
 
