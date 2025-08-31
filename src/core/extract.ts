@@ -1,8 +1,7 @@
 import type { TSESTree } from "@typescript-eslint/typescript-estree";
-import type { Program } from "estree";
 
 import { AST_NODE_TYPES } from "@typescript-eslint/typescript-estree";
-import { walk } from "estree-walker";
+import { walk } from "zimmerframe";
 
 import type { LiteralValue, ResolveRules } from "./options";
 
@@ -31,23 +30,18 @@ export interface ImportMetaAnalysisResult {
 }
 
 export function extractImportMetaReplacements(
-  ast: TSESTree.Program,
+  ast: TSESTree.Node,
   resolveRules: ResolveRules,
 ): ImportMetaAnalysisResult {
   const transformations: CodeReplacement[] = [];
   const warnings: ExtractionWarning[] = [];
 
-  walk(ast as Program, {
-    enter(child: TSESTree.Node) {
-      if (
-        child.type !== AST_NODE_TYPES.MemberExpression &&
-        child.type !== AST_NODE_TYPES.CallExpression
-      ) {
-        return;
-      }
-
-      if (child.type === AST_NODE_TYPES.MemberExpression) {
-        const memberExpr = child;
+  walk(
+    ast,
+    {},
+    {
+      MemberExpression: (node) => {
+        const memberExpr = node;
 
         if (isImportMetaExpression(memberExpr)) {
           const accessPath = getAccessPath(memberExpr);
@@ -60,14 +54,16 @@ export function extractImportMetaReplacements(
               resolveRules.properties[accessPath],
             );
             transformations.push({
-              end: child.range[1],
+              end: memberExpr.range[1],
               replacement,
-              start: child.range[0],
+              start: memberExpr.range[0],
             });
           }
         }
-      } else {
-        const callExpr = child;
+      },
+
+      CallExpression: (node) => {
+        const callExpr = node;
 
         if (
           callExpr.callee.type === AST_NODE_TYPES.MemberExpression &&
@@ -82,22 +78,22 @@ export function extractImportMetaReplacements(
             const literalArgs: Array<LiteralValue | null> = [];
             const nonLiteralArgs: Array<{ index: number; type: string }> = [];
 
-            callExpr.arguments.forEach((arg, index) => {
-              if (arg.type === AST_NODE_TYPES.Literal) {
-                literalArgs.push(arg.value);
+            for (const [index, args] of callExpr.arguments.entries()) {
+              if (args.type === AST_NODE_TYPES.Literal) {
+                literalArgs.push(args.value);
               } else {
                 literalArgs.push(null);
-                nonLiteralArgs.push({ index, type: arg.type });
+                nonLiteralArgs.push({ index, type: args.type });
               }
-            });
+            }
 
             if (nonLiteralArgs.length > 0) {
               warnings.push({
-                end: child.range[1],
+                end: callExpr.range[1],
                 message: `Method ${methodPath} called with non-literal arguments`,
                 methodName: methodPath,
                 nonLiteralArgs,
-                start: child.range[0],
+                start: callExpr.range[0],
               });
             }
 
@@ -106,18 +102,18 @@ export function extractImportMetaReplacements(
               const replacement = JSON.stringify(result);
 
               transformations.push({
-                end: child.range[1],
+                end: callExpr.range[1],
                 replacement,
-                start: child.range[0],
+                start: callExpr.range[0],
               });
             } catch (error) {
               console.warn(`Failed to execute method ${methodPath}:`, error);
             }
           }
         }
-      }
+      },
     },
-  });
+  );
 
   return {
     replacements: transformations,

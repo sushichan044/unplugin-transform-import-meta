@@ -34,7 +34,9 @@
     "provenance": true
   },
   "funding": "https://github.com/sponsors/sushichan044",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -52,7 +54,10 @@
   },
   "typesVersions": {
     "*": {
-      "*": ["./dist/*", "./*"]
+      "*": [
+        "./dist/*",
+        "./*"
+      ]
     }
   },
   "scripts": {
@@ -66,12 +71,11 @@
     "pkg-pr-new": "pkg-pr-new publish --compact --comment=update --pnpm"
   },
   "dependencies": {
-    "@typescript-eslint/typescript-estree": "8.41.0",
-    "@typescript-eslint/utils": "8.41.0",
-    "estree-walker": "3.0.3",
+    "@typescript-eslint/typescript-estree": "^8.41.0",
     "magic-string": "^0.30.12",
     "unplugin": "^2.3.8",
-    "unplugin-utils": "^0.3.0"
+    "unplugin-utils": "^0.3.0",
+    "zimmerframe": "^1.1.2"
   },
   "devDependencies": {
     "@arethetypeswrong/core": "0.18.2",
