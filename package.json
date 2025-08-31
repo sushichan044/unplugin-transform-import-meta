@@ -71,6 +71,10 @@
     "pkg-pr-new": "pkg-pr-new publish --compact --comment=update --pnpm"
   },
   "dependencies": {
+    "@typescript-eslint/typescript-estree": "8.41.0",
+    "@typescript-eslint/utils": "8.41.0",
+    "estree-walker": "3.0.3",
+    "magic-string": "^0.30.12",
     "unplugin": "^2.3.8",
     "unplugin-utils": "^0.3.0"
   },
@@ -78,6 +82,7 @@
     "@arethetypeswrong/core": "0.18.2",
     "@biomejs/biome": "2.2.2",
     "@sxzz/test-utils": "^0.5.10",
+    "@types/estree": "1.0.8",
     "@types/node": "24.3.0",
     "@virtual-live-lab/eslint-config": "2.2.24",
     "@virtual-live-lab/tsconfig": "2.1.21",
