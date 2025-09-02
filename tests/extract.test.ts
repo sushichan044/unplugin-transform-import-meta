@@ -4,7 +4,7 @@ import type { ResolveRules } from "../src/core/options";
 
 import { extractImportMetaReplacements } from "../src/core/extract";
 import { parseProgram } from "../src/core/parse";
-import { transformWithReplacements } from "../src/core/replacement";
+import { transformWithReplacements } from "../src/core/transform";
 
 describe("extractImportMetaReplacements", () => {
   type BasicTestCase = {

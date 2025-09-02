@@ -3,7 +3,7 @@ import type { LanguageProcessor, ParseResult, TransformResult } from "./types";
 
 import { extractImportMetaReplacements } from "../extract";
 import { parseProgram } from "../parse";
-import { transformWithReplacements } from "../replacement";
+import { transformWithReplacements } from "../transform";
 
 export function createECMAScriptProcessor(): LanguageProcessor {
   return {
