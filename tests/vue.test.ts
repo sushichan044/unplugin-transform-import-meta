@@ -10,7 +10,7 @@ describe("Vue SFC support", () => {
     expect(detectLanguage("index.ts")).toBe("ecma");
   });
 
-  it("should transform import.meta in Vue SFC", () => {
+  it("should transform import.meta in Vue SFC", async () => {
     const source = `<template>
   <div>
     <h1>{{ title }}</h1>
@@ -37,15 +37,15 @@ div {
     };
 
     const processor = createProcessor("test.vue");
-    const parseResult = processor.parse(source, "test.vue");
-    const result = processor.transform(parseResult, resolveRules);
+    const parseResult = await processor.parse(source, "test.vue");
+    const result = await processor.transform(parseResult, resolveRules);
 
     expect(result.code).toContain('"development"');
     expect(result.code).not.toContain("import.meta.env.NODE_ENV");
     expect(result.warnings).toHaveLength(0);
   });
 
-  it("should handle Vue SFC without import.meta", () => {
+  it("should handle Vue SFC without import.meta", async () => {
     const source = `<template>
   <div>
     <h1>{{ title }}</h1>
@@ -70,14 +70,14 @@ div {
     };
 
     const processor = createProcessor("test.vue");
-    const parseResult = processor.parse(source, "test.vue");
-    const result = processor.transform(parseResult, resolveRules);
+    const parseResult = await processor.parse(source, "test.vue");
+    const result = await processor.transform(parseResult, resolveRules);
 
     expect(result.code).toBe(source);
     expect(result.warnings).toHaveLength(0);
   });
 
-  it("should handle regular script block", () => {
+  it("should handle regular script block", async () => {
     const source = `<template>
   <div>
     <h1>{{ title }}</h1>
@@ -110,8 +110,8 @@ div {
     };
 
     const processor = createProcessor("test.vue");
-    const parseResult = processor.parse(source, "test.vue");
-    const result = processor.transform(parseResult, resolveRules);
+    const parseResult = await processor.parse(source, "test.vue");
+    const result = await processor.transform(parseResult, resolveRules);
 
     expect(result.code).toContain('"production"');
     expect(result.code).not.toContain("import.meta.env.NODE_ENV");

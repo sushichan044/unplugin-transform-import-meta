@@ -33,7 +33,7 @@ export const unpluginTransformImportMeta: UnpluginInstance<
             (options.include as Writeable<typeof options.include>) ?? undefined,
         },
       },
-      handler(this, code, id) {
+      async handler(this, code, id) {
         if (Object.keys(options.resolveRules).length === 0) {
           return code;
         }
@@ -41,9 +41,9 @@ export const unpluginTransformImportMeta: UnpluginInstance<
         try {
           const processor = createProcessor(id);
 
-          const parseResult = processor.parse(code, id);
+          const parseResult = await processor.parse(code, id);
 
-          const transformResult = processor.transform(
+          const transformResult = await processor.transform(
             parseResult,
             options.resolveRules,
           );

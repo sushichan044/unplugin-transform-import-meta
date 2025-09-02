@@ -1,5 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/typescript-estree";
 
+import type { Awaitable } from "../../utils/types";
 import type { ResolveRules } from "../options";
 
 export interface ParseResult {
@@ -16,10 +17,10 @@ export interface TransformResult {
 }
 
 export interface LanguageProcessor {
-  parse(code: string, filename: string): ParseResult;
+  parse(code: string, filename: string): Awaitable<ParseResult>;
 
   transform(
     parseResult: ParseResult,
     resolveRules: ResolveRules,
-  ): TransformResult;
+  ): Awaitable<TransformResult>;
 }
