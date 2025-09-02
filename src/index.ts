@@ -5,12 +5,8 @@ import { createUnplugin } from "unplugin";
 import type { Options } from "./core/options";
 import type { Writeable } from "./utils/types";
 
-import { extractImportMetaReplacements } from "./core/extract";
+import { createProcessor } from "./core/lang";
 import { resolveOptions } from "./core/options";
-import { parseProgram } from "./core/parse";
-import { transformWithReplacements } from "./core/replacement";
-import { isVueFile } from "./core/vue-detector";
-import { transformVueSFC } from "./core/vue-transform";
 
 export type { Options, ResolveRules } from "./core/options";
 
@@ -43,36 +39,20 @@ export const unpluginTransformImportMeta: UnpluginInstance<
         }
 
         try {
-          if (isVueFile(id)) {
-            const result = transformVueSFC(code, id, options.resolveRules);
+          const processor = createProcessor(id);
 
-            for (const warning of result.warnings) {
-              this.warn(warning);
-            }
+          const parseResult = processor.parse(code, id);
 
-            return result.code;
-          }
-
-          const ast = parseProgram(code);
-
-          const result = extractImportMetaReplacements(
-            ast,
+          const transformResult = processor.transform(
+            parseResult,
             options.resolveRules,
           );
 
-          if (result.warnings.length > 0) {
-            for (const warning of result.warnings) {
-              this.warn(
-                `Warning: ${warning.message} at ${warning.start}-${warning.end}`,
-              );
-            }
+          for (const warning of transformResult.warnings) {
+            this.warn(warning);
           }
 
-          if (result.replacements.length === 0) {
-            return code;
-          }
-
-          return transformWithReplacements(code, result.replacements);
+          return transformResult.code;
         } catch (error) {
           console.warn(`Failed to transform import.meta in code:`, error);
           return code;
