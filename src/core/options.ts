@@ -1,7 +1,13 @@
-import type { Literal } from "estree";
 import type { FilterPattern } from "unplugin-utils";
 
-export type LiteralValue = Literal["value"];
+export type LiteralValue =
+  | bigint
+  | boolean
+  | number
+  | string
+  | RegExp
+  | null
+  | undefined;
 
 export type MethodFunction = (...args: LiteralValue[]) => LiteralValue;
 
