@@ -9,6 +9,8 @@ import { extractImportMetaReplacements } from "./core/extract";
 import { resolveOptions } from "./core/options";
 import { parseProgram } from "./core/parse";
 import { transformWithReplacements } from "./core/replacement";
+import { isVueFile } from "./core/vue-detector";
+import { transformVueSFC } from "./core/vue-transform";
 
 export type { Options, ResolveRules } from "./core/options";
 
@@ -35,12 +37,22 @@ export const unpluginTransformImportMeta: UnpluginInstance<
             (options.include as Writeable<typeof options.include>) ?? undefined,
         },
       },
-      handler(this, code) {
+      handler(this, code, id) {
         if (Object.keys(options.resolveRules).length === 0) {
           return code;
         }
 
         try {
+          if (isVueFile(id)) {
+            const result = transformVueSFC(code, id, options.resolveRules);
+
+            for (const warning of result.warnings) {
+              this.warn(warning);
+            }
+
+            return result.code;
+          }
+
           const ast = parseProgram(code);
 
           const result = extractImportMetaReplacements(
