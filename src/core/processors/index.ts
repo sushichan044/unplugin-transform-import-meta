@@ -1,7 +1,7 @@
-import type { LanguageProcessor } from "./processors/types";
+import type { LanguageProcessor } from "./types";
 
-import { createECMAScriptProcessor } from "./processors/ecmascript";
-import { createVueProcessor } from "./processors/vue";
+import { createECMAScriptProcessor } from "./ecmascript";
+import { createVueProcessor } from "./vue";
 
 type SupportedLanguage = "ecma" | "vue";
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createProcessor, detectLanguage } from "../src/core/lang";
+import { createProcessor, detectLanguage } from "../src/core/processors";
 
 describe("Vue SFC support", () => {
   it("should detect Vue files", () => {
@@ -37,8 +37,7 @@ div {
     };
 
     const processor = createProcessor("test.vue");
-    const parseResult = await processor.parse(source, "test.vue");
-    const result = await processor.transform(parseResult, resolveRules);
+    const result = await processor.transform(source, "test.vue", resolveRules);
 
     expect(result.code).toContain('"development"');
     expect(result.code).not.toContain("import.meta.env.NODE_ENV");
@@ -70,8 +69,7 @@ div {
     };
 
     const processor = createProcessor("test.vue");
-    const parseResult = await processor.parse(source, "test.vue");
-    const result = await processor.transform(parseResult, resolveRules);
+    const result = await processor.transform(source, "test.vue", resolveRules);
 
     expect(result.code).toBe(source);
     expect(result.warnings).toHaveLength(0);
@@ -110,8 +108,7 @@ div {
     };
 
     const processor = createProcessor("test.vue");
-    const parseResult = await processor.parse(source, "test.vue");
-    const result = await processor.transform(parseResult, resolveRules);
+    const result = await processor.transform(source, "test.vue", resolveRules);
 
     expect(result.code).toContain('"production"');
     expect(result.code).not.toContain("import.meta.env.NODE_ENV");

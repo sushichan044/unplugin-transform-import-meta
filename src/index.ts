@@ -5,8 +5,8 @@ import { createUnplugin } from "unplugin";
 import type { Options } from "./core/options";
 import type { Writeable } from "./utils/types";
 
-import { createProcessor } from "./core/lang";
 import { resolveOptions } from "./core/options";
+import { createProcessor } from "./core/processors";
 
 export type { Options, ResolveRules } from "./core/options";
 
@@ -41,10 +41,9 @@ export const unpluginTransformImportMeta: UnpluginInstance<
         try {
           const processor = createProcessor(id);
 
-          const parseResult = await processor.parse(code, id);
-
           const transformResult = await processor.transform(
-            parseResult,
+            code,
+            id,
             options.resolveRules,
           );
 

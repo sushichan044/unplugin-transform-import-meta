@@ -1,41 +1,25 @@
 import type { ResolveRules } from "../options";
-import type { LanguageProcessor, ParseResult, TransformResult } from "./types";
+import type { LanguageProcessor, TransformResult } from "./types";
 
 import { extractImportMetaReplacements } from "../extract";
 import { parseProgram } from "../parse";
 import { transformWithReplacements } from "../transform";
 
+/**
+ * @package
+ */
 export function createECMAScriptProcessor(): LanguageProcessor {
   return {
-    parse(
-      code: string,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      _filename: string,
-    ): ParseResult {
-      try {
-        const ast = parseProgram(code);
-        return {
-          ast,
-          code,
-          warnings: [],
-        };
-      } catch (error) {
-        return {
-          ast: parseProgram(""),
-          code,
-          warnings: [`Failed to parse ECMAScript code: ${String(error)}`],
-        };
-      }
-    },
-
     transform(
-      parseResult: ParseResult,
+      code: string,
+      id: string,
       resolveRules: ResolveRules,
     ): TransformResult {
-      const { ast, code, warnings: parseWarnings } = parseResult;
-      const warnings = [...parseWarnings];
+      const warnings: string[] = [];
 
       try {
+        const ast = parseProgram(code);
+
         const result = extractImportMetaReplacements(ast, resolveRules);
 
         if (result.warnings.length > 0) {
@@ -56,9 +40,11 @@ export function createECMAScriptProcessor(): LanguageProcessor {
         );
 
         return { code: transformedCode, warnings };
-      } catch (error) {
-        warnings.push(`Failed to transform ECMAScript code: ${String(error)}`);
-        return { code: code, warnings };
+      } catch (parseError) {
+        warnings.push(
+          `Failed to parse ECMAScript. id: ${id}, error: ${String(parseError)}`,
+        );
+        return { code, warnings };
       }
     },
   };

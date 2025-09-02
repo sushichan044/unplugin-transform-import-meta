@@ -3,70 +3,27 @@ import type { SFCDescriptor, SFCScriptBlock } from "@vue/compiler-sfc";
 import { parse as parseSFC } from "@vue/compiler-sfc";
 
 import type { ResolveRules } from "../options";
-import type { LanguageProcessor, ParseResult, TransformResult } from "./types";
+import type { LanguageProcessor, TransformResult } from "./types";
 
 import { extractImportMetaReplacements } from "../extract";
 import { parseProgram } from "../parse";
 import { transformWithReplacements } from "../transform";
 
+/**
+ * @package
+ */
 export function createVueProcessor(): LanguageProcessor {
   return {
-    parse(code: string, filename: string): ParseResult {
-      try {
-        const { descriptor } = parseSFC(code, {
-          filename,
-          sourceMap: false,
-        });
-
-        const scriptBlock = getScriptBlock(descriptor);
-        if (scriptBlock?.content == null) {
-          return {
-            ast: parseProgram(""),
-            code,
-            warnings: [],
-          };
-        }
-
-        const scriptContent = scriptBlock.content;
-        if (
-          scriptContent.length === 0 ||
-          !scriptContent.includes("import.meta")
-        ) {
-          return {
-            ast: parseProgram(""),
-            code,
-            warnings: [],
-          };
-        }
-
-        const ast = parseProgram(scriptContent);
-        return {
-          ast,
-          code,
-          warnings: [],
-        };
-      } catch (error) {
-        return {
-          ast: parseProgram(""),
-          code,
-          warnings: [`Failed to parse Vue SFC: ${String(error)}`],
-        };
-      }
-    },
-
     transform(
-      parseResult: ParseResult,
+      code: string,
+      id: string,
       resolveRules: ResolveRules,
     ): TransformResult {
-      const { code, warnings: parseWarnings } = parseResult;
-      const warnings = [...parseWarnings];
-
-      if (parseWarnings.length > 0) {
-        return { code, warnings };
-      }
+      const warnings: string[] = [];
 
       try {
         const { descriptor } = parseSFC(code, {
+          filename: id,
           sourceMap: false,
         });
 
@@ -114,7 +71,9 @@ export function createVueProcessor(): LanguageProcessor {
 
         return { code: transformedCode, warnings };
       } catch (error) {
-        warnings.push(`Failed to transform Vue SFC: ${String(error)}`);
+        warnings.push(
+          `Failed to parse or transform Vue SFC. id: ${id}, code: ${String(error)}`,
+        );
         return { code, warnings };
       }
     },
