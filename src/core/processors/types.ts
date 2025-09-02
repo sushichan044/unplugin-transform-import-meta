@@ -5,7 +5,7 @@ import type { ResolveRules } from "../options";
 export interface ParseResult {
   ast: TSESTree.Node;
 
-  sourceContent: string;
+  code: string;
 
   warnings: string[];
 }

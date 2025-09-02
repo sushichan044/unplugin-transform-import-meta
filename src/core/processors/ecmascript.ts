@@ -16,13 +16,13 @@ export function createECMAScriptProcessor(): LanguageProcessor {
         const ast = parseProgram(code);
         return {
           ast,
-          sourceContent: code,
+          code,
           warnings: [],
         };
       } catch (error) {
         return {
           ast: parseProgram(""),
-          sourceContent: code,
+          code,
           warnings: [`Failed to parse ECMAScript code: ${String(error)}`],
         };
       }
@@ -32,7 +32,7 @@ export function createECMAScriptProcessor(): LanguageProcessor {
       parseResult: ParseResult,
       resolveRules: ResolveRules,
     ): TransformResult {
-      const { ast, sourceContent, warnings: parseWarnings } = parseResult;
+      const { ast, code, warnings: parseWarnings } = parseResult;
       const warnings = [...parseWarnings];
 
       try {
@@ -47,18 +47,18 @@ export function createECMAScriptProcessor(): LanguageProcessor {
         }
 
         if (result.replacements.length === 0) {
-          return { code: sourceContent, warnings };
+          return { code, warnings };
         }
 
         const transformedCode = transformWithReplacements(
-          sourceContent,
+          code,
           result.replacements,
         );
 
         return { code: transformedCode, warnings };
       } catch (error) {
         warnings.push(`Failed to transform ECMAScript code: ${String(error)}`);
-        return { code: sourceContent, warnings };
+        return { code: code, warnings };
       }
     },
   };

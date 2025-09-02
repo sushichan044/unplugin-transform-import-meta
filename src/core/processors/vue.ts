@@ -22,7 +22,7 @@ export function createVueProcessor(): LanguageProcessor {
         if (scriptBlock?.content == null) {
           return {
             ast: parseProgram(""),
-            sourceContent: code,
+            code,
             warnings: [],
           };
         }
@@ -34,7 +34,7 @@ export function createVueProcessor(): LanguageProcessor {
         ) {
           return {
             ast: parseProgram(""),
-            sourceContent: code,
+            code,
             warnings: [],
           };
         }
@@ -42,13 +42,13 @@ export function createVueProcessor(): LanguageProcessor {
         const ast = parseProgram(scriptContent);
         return {
           ast,
-          sourceContent: code,
+          code,
           warnings: [],
         };
       } catch (error) {
         return {
           ast: parseProgram(""),
-          sourceContent: code,
+          code,
           warnings: [`Failed to parse Vue SFC: ${String(error)}`],
         };
       }
@@ -58,21 +58,21 @@ export function createVueProcessor(): LanguageProcessor {
       parseResult: ParseResult,
       resolveRules: ResolveRules,
     ): TransformResult {
-      const { sourceContent, warnings: parseWarnings } = parseResult;
+      const { code, warnings: parseWarnings } = parseResult;
       const warnings = [...parseWarnings];
 
       if (parseWarnings.length > 0) {
-        return { code: sourceContent, warnings };
+        return { code, warnings };
       }
 
       try {
-        const { descriptor } = parseSFC(sourceContent, {
+        const { descriptor } = parseSFC(code, {
           sourceMap: false,
         });
 
         const scriptBlock = getScriptBlock(descriptor);
         if (scriptBlock?.content == null) {
-          return { code: sourceContent, warnings };
+          return { code, warnings };
         }
 
         const scriptContent = scriptBlock.content;
@@ -80,7 +80,7 @@ export function createVueProcessor(): LanguageProcessor {
           scriptContent.length === 0 ||
           !scriptContent.includes("import.meta")
         ) {
-          return { code: sourceContent, warnings };
+          return { code, warnings };
         }
 
         const scriptAst = parseProgram(scriptContent);
@@ -98,7 +98,7 @@ export function createVueProcessor(): LanguageProcessor {
         }
 
         if (extractResult.replacements.length === 0) {
-          return { code: sourceContent, warnings };
+          return { code, warnings };
         }
 
         const transformedScript = transformWithReplacements(
@@ -106,16 +106,16 @@ export function createVueProcessor(): LanguageProcessor {
           extractResult.replacements,
         );
 
-        const transformedSource = replaceScriptContent(
-          sourceContent,
+        const transformedCode = replaceScriptContent(
+          code,
           scriptBlock,
           transformedScript,
         );
 
-        return { code: transformedSource, warnings };
+        return { code: transformedCode, warnings };
       } catch (error) {
         warnings.push(`Failed to transform Vue SFC: ${String(error)}`);
-        return { code: sourceContent, warnings };
+        return { code, warnings };
       }
     },
   };
