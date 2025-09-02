@@ -1,7 +1,7 @@
 import type { LanguageProcessor } from "./processors/types";
 
-import { ECMAScriptParser } from "./processors/ecmascript";
-import { VueParser } from "./processors/vue";
+import { createECMAScriptProcessor } from "./processors/ecmascript";
+import { createVueProcessor } from "./processors/vue";
 
 export type SupportedLanguage = "ecma" | "vue";
 
@@ -10,10 +10,10 @@ export function createProcessor(id: string): LanguageProcessor {
 
   switch (lang) {
     case "ecma": {
-      return new ECMAScriptParser();
+      return createECMAScriptProcessor();
     }
     case "vue": {
-      return new VueParser();
+      return createVueProcessor();
     }
 
     default: {

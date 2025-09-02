@@ -9,114 +9,116 @@ import { extractImportMetaReplacements } from "../extract";
 import { parseProgram } from "../parse";
 import { transformWithReplacements } from "../replacement";
 
-export class VueParser implements LanguageProcessor {
-  parse(code: string, filename: string): ParseResult {
-    try {
-      const { descriptor } = parseSFC(code, {
-        filename,
-        sourceMap: false,
-      });
+export function createVueProcessor(): LanguageProcessor {
+  return {
+    parse(code: string, filename: string): ParseResult {
+      try {
+        const { descriptor } = parseSFC(code, {
+          filename,
+          sourceMap: false,
+        });
 
-      const scriptBlock = getScriptBlock(descriptor);
-      if (scriptBlock?.content == null) {
+        const scriptBlock = getScriptBlock(descriptor);
+        if (scriptBlock?.content == null) {
+          return {
+            ast: parseProgram(""),
+            sourceContent: code,
+            warnings: [],
+          };
+        }
+
+        const scriptContent = scriptBlock.content;
+        if (
+          scriptContent.length === 0 ||
+          !scriptContent.includes("import.meta")
+        ) {
+          return {
+            ast: parseProgram(""),
+            sourceContent: code,
+            warnings: [],
+          };
+        }
+
+        const ast = parseProgram(scriptContent);
         return {
-          ast: parseProgram(""),
+          ast,
           sourceContent: code,
           warnings: [],
         };
-      }
-
-      const scriptContent = scriptBlock.content;
-      if (
-        scriptContent.length === 0 ||
-        !scriptContent.includes("import.meta")
-      ) {
+      } catch (error) {
         return {
           ast: parseProgram(""),
           sourceContent: code,
-          warnings: [],
+          warnings: [`Failed to parse Vue SFC: ${String(error)}`],
         };
       }
+    },
 
-      const ast = parseProgram(scriptContent);
-      return {
-        ast,
-        sourceContent: code,
-        warnings: [],
-      };
-    } catch (error) {
-      return {
-        ast: parseProgram(""),
-        sourceContent: code,
-        warnings: [`Failed to parse Vue SFC: ${String(error)}`],
-      };
-    }
-  }
+    transform(
+      parseResult: ParseResult,
+      resolveRules: ResolveRules,
+    ): TransformResult {
+      const { sourceContent, warnings: parseWarnings } = parseResult;
+      const warnings = [...parseWarnings];
 
-  transform(
-    parseResult: ParseResult,
-    resolveRules: ResolveRules,
-  ): TransformResult {
-    const { sourceContent, warnings: parseWarnings } = parseResult;
-    const warnings = [...parseWarnings];
-
-    if (parseWarnings.length > 0) {
-      return { code: sourceContent, warnings };
-    }
-
-    try {
-      const { descriptor } = parseSFC(sourceContent, {
-        sourceMap: false,
-      });
-
-      const scriptBlock = getScriptBlock(descriptor);
-      if (scriptBlock?.content == null) {
+      if (parseWarnings.length > 0) {
         return { code: sourceContent, warnings };
       }
 
-      const scriptContent = scriptBlock.content;
-      if (
-        scriptContent.length === 0 ||
-        !scriptContent.includes("import.meta")
-      ) {
-        return { code: sourceContent, warnings };
-      }
+      try {
+        const { descriptor } = parseSFC(sourceContent, {
+          sourceMap: false,
+        });
 
-      const scriptAst = parseProgram(scriptContent);
-      const extractResult = extractImportMetaReplacements(
-        scriptAst,
-        resolveRules,
-      );
+        const scriptBlock = getScriptBlock(descriptor);
+        if (scriptBlock?.content == null) {
+          return { code: sourceContent, warnings };
+        }
 
-      if (extractResult.warnings.length > 0) {
-        warnings.push(
-          ...extractResult.warnings.map(
-            (w) => `Warning: ${w.message} at ${w.start}-${w.end}`,
-          ),
+        const scriptContent = scriptBlock.content;
+        if (
+          scriptContent.length === 0 ||
+          !scriptContent.includes("import.meta")
+        ) {
+          return { code: sourceContent, warnings };
+        }
+
+        const scriptAst = parseProgram(scriptContent);
+        const extractResult = extractImportMetaReplacements(
+          scriptAst,
+          resolveRules,
         );
-      }
 
-      if (extractResult.replacements.length === 0) {
+        if (extractResult.warnings.length > 0) {
+          warnings.push(
+            ...extractResult.warnings.map(
+              (w) => `Warning: ${w.message} at ${w.start}-${w.end}`,
+            ),
+          );
+        }
+
+        if (extractResult.replacements.length === 0) {
+          return { code: sourceContent, warnings };
+        }
+
+        const transformedScript = transformWithReplacements(
+          scriptContent,
+          extractResult.replacements,
+        );
+
+        const transformedSource = replaceScriptContent(
+          sourceContent,
+          scriptBlock,
+          transformedScript,
+        );
+
+        return { code: transformedSource, warnings };
+      } catch (error) {
+        warnings.push(`Failed to transform Vue SFC: ${String(error)}`);
         return { code: sourceContent, warnings };
       }
-
-      const transformedScript = transformWithReplacements(
-        scriptContent,
-        extractResult.replacements,
-      );
-
-      const transformedSource = replaceScriptContent(
-        sourceContent,
-        scriptBlock,
-        transformedScript,
-      );
-
-      return { code: transformedSource, warnings };
-    } catch (error) {
-      warnings.push(`Failed to transform Vue SFC: ${String(error)}`);
-      return { code: sourceContent, warnings };
-    }
-  }
+    },
+  };
 }
 
 function getScriptBlock(descriptor: SFCDescriptor): SFCScriptBlock | null {
