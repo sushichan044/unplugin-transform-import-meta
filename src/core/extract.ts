@@ -13,7 +13,7 @@ export interface CodeReplacement {
   start: number;
 }
 
-export interface ExtractionWarning {
+interface ExtractionWarning {
   end: number;
   message: string;
   methodName: string;
@@ -24,7 +24,7 @@ export interface ExtractionWarning {
   start: number;
 }
 
-export interface ImportMetaAnalysisResult {
+interface ImportMetaAnalysisResult {
   replacements: CodeReplacement[];
   warnings: ExtractionWarning[];
 }

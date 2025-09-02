@@ -3,7 +3,7 @@ import type { LanguageProcessor } from "./processors/types";
 import { createECMAScriptProcessor } from "./processors/ecmascript";
 import { createVueProcessor } from "./processors/vue";
 
-export type SupportedLanguage = "ecma" | "vue";
+type SupportedLanguage = "ecma" | "vue";
 
 export function createProcessor(id: string): LanguageProcessor {
   const lang = detectLanguage(id);
