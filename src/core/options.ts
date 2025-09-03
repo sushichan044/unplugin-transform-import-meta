@@ -31,7 +31,12 @@ export function resolveOptions(options: Options): OptionsResolved {
   return {
     enforce: "enforce" in options ? options.enforce : "pre",
     exclude: options.exclude ?? [/node_modules/],
-    include: options.include ?? [/\.[cm]?[jt]sx?$/],
+    include: options.include ?? [
+      /\.[cm]?[jt]sx?$/,
+      /\.vue$/,
+      /\.astro$/,
+      /\.svelte$/,
+    ],
     resolveRules: options.resolveRules ?? {},
   };
 }

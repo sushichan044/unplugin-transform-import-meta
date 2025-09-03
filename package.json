@@ -73,8 +73,21 @@
     "unplugin-utils": "^0.3.0",
     "zimmerframe": "^1.1.2"
   },
+  "peerDependencies": {
+    "@astrojs/compiler": "^2.0.0",
+    "svelte": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@astrojs/compiler": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@arethetypeswrong/core": "0.18.2",
+    "@astrojs/compiler": "^2.12.2",
     "@biomejs/biome": "2.2.2",
     "@sxzz/test-utils": "^0.5.10",
     "@types/node": "24.3.0",
@@ -86,6 +99,7 @@
     "publint": "0.3.12",
     "release-it": "19.0.4",
     "release-it-pnpm": "4.6.6",
+    "svelte": "^5.17.0",
     "tsdown": "0.14.2",
     "typescript": "5.9.2",
     "typescript-eslint": "8.41.0",
