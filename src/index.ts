@@ -7,6 +7,7 @@ import type { Writeable } from "./utils/types";
 
 import { resolveOptions } from "./core/options";
 import { createProcessor } from "./core/processors";
+import { transformWithReplacements } from "./core/transform";
 
 export type { Options, ResolveRules } from "./core/options";
 
@@ -51,7 +52,11 @@ export const unpluginTransformImportMeta: UnpluginInstance<
             this.warn(warning);
           }
 
-          return transformResult.code;
+          if (transformResult.replacements.length === 0) {
+            return code;
+          }
+
+          return transformWithReplacements(code, transformResult.replacements);
         } catch (error) {
           console.warn(`Failed to transform import.meta in code:`, error);
           return code;

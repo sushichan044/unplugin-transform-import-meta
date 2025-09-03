@@ -7,7 +7,6 @@ import type { LanguageProcessor, TransformResult } from "./types";
 
 import { extractImportMetaReplacements } from "../extract";
 import { parseProgram } from "../parse";
-import { transformWithReplacements } from "../transform";
 
 /**
  * @package
@@ -29,7 +28,7 @@ export function createVueProcessor(): LanguageProcessor {
 
         const scriptBlock = getScriptBlock(descriptor);
         if (scriptBlock?.content == null) {
-          return { code, warnings };
+          return { replacements: [], warnings };
         }
 
         const scriptContent = scriptBlock.content;
@@ -37,7 +36,7 @@ export function createVueProcessor(): LanguageProcessor {
           scriptContent.length === 0 ||
           !scriptContent.includes("import.meta")
         ) {
-          return { code, warnings };
+          return { replacements: [], warnings };
         }
 
         const scriptAst = parseProgram(scriptContent);
@@ -54,27 +53,19 @@ export function createVueProcessor(): LanguageProcessor {
           );
         }
 
-        if (extractResult.replacements.length === 0) {
-          return { code, warnings };
-        }
+        // Adjust replacements to be relative to the full Vue file, not just the script block
+        const adjustedReplacements = extractResult.replacements.map((r) => ({
+          end: scriptBlock.loc.start.offset + r.end,
+          replacement: r.replacement,
+          start: scriptBlock.loc.start.offset + r.start,
+        }));
 
-        const transformedScript = transformWithReplacements(
-          scriptContent,
-          extractResult.replacements,
-        );
-
-        const transformedCode = replaceScriptContent(
-          code,
-          scriptBlock,
-          transformedScript,
-        );
-
-        return { code: transformedCode, warnings };
+        return { replacements: adjustedReplacements, warnings };
       } catch (error) {
         warnings.push(
           `Failed to parse or transform Vue SFC. id: ${id}, code: ${String(error)}`,
         );
-        return { code, warnings };
+        return { replacements: [], warnings };
       }
     },
   };
@@ -82,19 +73,4 @@ export function createVueProcessor(): LanguageProcessor {
 
 function getScriptBlock(descriptor: SFCDescriptor): SFCScriptBlock | null {
   return descriptor.scriptSetup ?? descriptor.script;
-}
-
-function replaceScriptContent(
-  originalSource: string,
-  scriptBlock: SFCScriptBlock,
-  newContent: string,
-): string {
-  const { loc } = scriptBlock;
-  const contentStart = loc.start.offset;
-  const contentEnd = loc.end.offset;
-
-  const before = originalSource.slice(0, contentStart);
-  const after = originalSource.slice(contentEnd);
-
-  return before + newContent + after;
 }

@@ -34,7 +34,9 @@
     "provenance": true
   },
   "funding": "https://github.com/sponsors/sushichan044",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -52,7 +54,10 @@
   },
   "typesVersions": {
     "*": {
-      "*": ["./dist/*", "./*"]
+      "*": [
+        "./dist/*",
+        "./*"
+      ]
     }
   },
   "scripts": {
@@ -68,6 +73,7 @@
   "dependencies": {
     "@typescript-eslint/typescript-estree": "^8.41.0",
     "@vue/compiler-sfc": "^3.5.21",
+    "jiti": "2.5.1",
     "magic-string": "^0.30.12",
     "unplugin": "^2.3.8",
     "unplugin-utils": "^0.3.0",

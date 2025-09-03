@@ -1,11 +1,12 @@
 import type { Awaitable } from "../../utils/types";
 import type { ResolveRules } from "../options";
+import type { CodeReplacement } from "../types";
 
 /**
  * @package
  */
 export interface TransformResult {
-  code: string;
+  replacements: CodeReplacement[];
   warnings: string[];
 }
 

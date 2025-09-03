@@ -3,7 +3,6 @@ import type { LanguageProcessor, TransformResult } from "./types";
 
 import { extractImportMetaReplacements } from "../extract";
 import { parseProgram } from "../parse";
-import { transformWithReplacements } from "../transform";
 
 /**
  * @package
@@ -30,21 +29,12 @@ export function createECMAScriptProcessor(): LanguageProcessor {
           );
         }
 
-        if (result.replacements.length === 0) {
-          return { code, warnings };
-        }
-
-        const transformedCode = transformWithReplacements(
-          code,
-          result.replacements,
-        );
-
-        return { code: transformedCode, warnings };
+        return { replacements: result.replacements, warnings };
       } catch (parseError) {
         warnings.push(
           `Failed to parse ECMAScript. id: ${id}, error: ${String(parseError)}`,
         );
-        return { code, warnings };
+        return { replacements: [], warnings };
       }
     },
   };

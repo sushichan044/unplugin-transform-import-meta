@@ -4,14 +4,9 @@ import { AST_NODE_TYPES } from "@typescript-eslint/typescript-estree";
 import { walk } from "zimmerframe";
 
 import type { LiteralValue, ResolveRules } from "./options";
+import type { CodeReplacement } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
-
-export interface CodeReplacement {
-  end: number;
-  replacement: string;
-  start: number;
-}
 
 interface ExtractionWarning {
   end: number;
@@ -42,7 +37,7 @@ export function extractImportMetaReplacements(
     {
       MemberExpression: (node, c) => {
         if (!isImportMetaExpression(node)) {
-          c.stop();
+          // Not an import.meta expression; continue walking normally
           return;
         }
 
@@ -69,7 +64,7 @@ export function extractImportMetaReplacements(
             isImportMetaExpression(node.callee)
           )
         ) {
-          c.stop();
+          // Not a call on import.meta; continue walking normally
           return;
         }
 

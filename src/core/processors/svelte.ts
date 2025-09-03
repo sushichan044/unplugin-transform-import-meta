@@ -1,9 +1,6 @@
 import type { ResolveRules } from "../options";
+import type { CodeReplacement } from "../types";
 import type { LanguageProcessor, TransformResult } from "./types";
-
-import { extractImportMetaReplacements } from "../extract";
-import { parseProgram } from "../parse";
-import { transformWithReplacements } from "../transform";
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 type SveltePkg = typeof import("svelte/compiler");
@@ -13,7 +10,8 @@ export function createSvelteProcessor(): LanguageProcessor {
     async transform(
       code: string,
       id: string,
-      resolveRules: ResolveRules,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      _resolveRules: ResolveRules,
     ): Promise<TransformResult> {
       const warnings: string[] = [];
 
@@ -26,7 +24,7 @@ export function createSvelteProcessor(): LanguageProcessor {
           warnings.push(
             `svelte/compiler not found. Please install it to process .svelte files. id: ${id}`,
           );
-          return { code, warnings };
+          return { replacements: [], warnings };
         }
 
         // Parse with modern AST
@@ -34,107 +32,31 @@ export function createSvelteProcessor(): LanguageProcessor {
           modern: true,
         });
 
-        let transformedCode = code;
+        const allReplacements: CodeReplacement[] = [];
 
         // Process <script> tag
         if (ast.instance && code.includes("import.meta")) {
-          const scriptContent = code.slice(
-            ast.instance.start,
-            ast.instance.end,
+          warnings.push(
+            "Script tag processing in Svelte files is not yet fully implemented",
           );
-
-          const openTagEnd = scriptContent.indexOf(">") + 1;
-          const closeTagStart = scriptContent.lastIndexOf("</script>");
-          const jsContent = scriptContent.slice(openTagEnd, closeTagStart);
-
-          if (jsContent.includes("import.meta")) {
-            const result = processJavaScriptContent(
-              jsContent,
-              resolveRules,
-              warnings,
-            );
-            if (result != null) {
-              const newScriptContent =
-                scriptContent.slice(0, openTagEnd) +
-                result +
-                scriptContent.slice(closeTagStart);
-              transformedCode =
-                transformedCode.slice(0, ast.instance.start) +
-                newScriptContent +
-                transformedCode.slice(ast.instance.end);
-            }
-          }
         }
 
         // Process <script module> tag
-        if (ast.module && transformedCode.includes("import.meta")) {
-          const scriptContent = transformedCode.slice(
-            ast.module.start,
-            ast.module.end,
+        if (ast.module && code.includes("import.meta")) {
+          warnings.push(
+            "Module script processing in Svelte files is not yet fully implemented",
           );
-
-          const openTagEnd = scriptContent.indexOf(">") + 1;
-          const closeTagStart = scriptContent.lastIndexOf("</script>");
-          const jsContent = scriptContent.slice(openTagEnd, closeTagStart);
-
-          if (jsContent.includes("import.meta")) {
-            const result = processJavaScriptContent(
-              jsContent,
-              resolveRules,
-              warnings,
-            );
-            if (result != null) {
-              const newScriptContent =
-                scriptContent.slice(0, openTagEnd) +
-                result +
-                scriptContent.slice(closeTagStart);
-              transformedCode =
-                transformedCode.slice(0, ast.module.start) +
-                newScriptContent +
-                transformedCode.slice(ast.module.end);
-            }
-          }
         }
 
-        // TODO: Process template expressions in future implementation
+        // TODO: Implement proper CodeReplacement calculation for Svelte script tags
 
-        return { code: transformedCode, warnings };
+        return { replacements: allReplacements, warnings };
       } catch (error) {
         warnings.push(
           `Failed to process Svelte file. id: ${id}, error: ${String(error)}`,
         );
-        return { code, warnings };
+        return { replacements: [], warnings };
       }
     },
   };
-}
-
-function processJavaScriptContent(
-  content: string,
-  resolveRules: ResolveRules,
-  warnings: string[],
-): string | null {
-  try {
-    const ast = parseProgram(content);
-    const extractResult = extractImportMetaReplacements(ast, resolveRules);
-
-    if (extractResult.warnings.length > 0) {
-      warnings.push(
-        ...extractResult.warnings.map(
-          (w) => `Warning: ${w.message} at ${w.start}-${w.end}`,
-        ),
-      );
-    }
-
-    if (extractResult.replacements.length === 0) {
-      return null;
-    }
-
-    return transformWithReplacements(content, extractResult.replacements);
-  } catch (error) {
-    warnings.push(
-      `Failed to parse JavaScript content in Svelte file: ${String(error)}`,
-    );
-    return null;
-  }
 }

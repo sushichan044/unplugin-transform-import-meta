@@ -1,6 +1,6 @@
 import MagicString from "magic-string";
 
-import type { CodeReplacement } from "./extract";
+import type { CodeReplacement } from "./types";
 
 export function transformWithReplacements(
   code: string,

@@ -1,12 +1,10 @@
 import type { ResolveRules } from "../options";
+import type { CodeReplacement } from "../types";
 import type { LanguageProcessor, TransformResult } from "./types";
 
+import { tryImport } from "../../utils/import";
 import { extractImportMetaReplacements } from "../extract";
 import { parseProgram } from "../parse";
-import { transformWithReplacements } from "../transform";
-
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-type AstroCompilerPkg = typeof import("@astrojs/compiler");
 
 export function createAstroProcessor(): LanguageProcessor {
   return {
@@ -17,85 +15,124 @@ export function createAstroProcessor(): LanguageProcessor {
     ): Promise<TransformResult> {
       const warnings: string[] = [];
 
+      const astroMod =
+        // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+        await tryImport<typeof import("@astrojs/compiler")>(
+          "@astrojs/compiler",
+        );
+
+      const astroUtilMod = await tryImport<
+        // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+        typeof import("@astrojs/compiler/utils")
+      >("@astrojs/compiler/utils");
+
+      if (astroMod == null || astroUtilMod == null) {
+        return { replacements: [], warnings };
+      }
+
+      const allReplacements: CodeReplacement[] = [];
       try {
-        let astroCompiler: AstroCompilerPkg;
-
-        try {
-          astroCompiler = await import("@astrojs/compiler");
-        } catch {
-          warnings.push(
-            `@astrojs/compiler not found. Please install it to process .astro files. id: ${id}`,
-          );
-          return { code, warnings };
-        }
-
         // First extract and transform frontmatter
-        const parseResult = await astroCompiler.parse(code, {
+        const parseResult = await astroMod.parse(code, {
           position: true,
         });
 
-        let transformedCode = code;
+        astroUtilMod.walk(parseResult.ast, (node) => {
+          if (astroUtilMod.is.frontmatter(node)) {
+            const tsCode = node.value;
+            const result = processJavaScriptContent(
+              tsCode,
+              resolveRules,
+              warnings,
+            );
 
-        // Process frontmatter if it exists
-        const frontmatterNode = parseResult.ast.children?.find(
-          (child) => child.type === "frontmatter",
-        );
+            if (result != null) {
+              // Adjust positions for frontmatter
+              const offset = node.position?.start?.offset ?? 0;
+              const adjustedReplacements = result.replacements.map(
+                (replacement) => ({
+                  ...replacement,
+                  end: replacement.end + offset + 3,
+                  start: replacement.start + offset + 3, // +3 for '---'
+                }),
+              );
 
-        if (frontmatterNode?.value?.includes("import.meta") == true) {
-          const scriptContent = frontmatterNode.value;
-          const result = processJavaScriptContent(
-            scriptContent,
-            resolveRules,
-            warnings,
-          );
-          if (result != null) {
-            const start = frontmatterNode.position?.start?.offset ?? 0;
-            const end = frontmatterNode.position?.end?.offset ?? 0;
-            transformedCode =
-              transformedCode.slice(0, start) +
-              "---" +
-              result +
-              "---" +
-              transformedCode.slice(end);
+              allReplacements.push(...adjustedReplacements);
+            }
           }
-        }
 
-        // Process script elements by using transform to get preprocessed JS
-        if (code.includes("<script") && code.includes("import.meta")) {
-          try {
-            const transformResult = await astroCompiler.transform(code, {
-              filename: id,
-              sourcemap: false,
-            });
+          if (astroUtilMod.is.expression(node) && node.children.length > 0) {
+            for (const childNode of node.children) {
+              if (!astroUtilMod.is.text(childNode)) {
+                continue;
+              }
 
-            // Extract JS from transform result and process it
-            const jsCode = transformResult.code;
-            if (jsCode.includes("import.meta")) {
-              const processedJS = processJavaScriptContent(
-                jsCode,
+              const tsCode = childNode.value;
+              const result = processJavaScriptContent(
+                tsCode,
                 resolveRules,
                 warnings,
               );
-              if (processedJS != null) {
-                // This is a simplified approach - in reality we'd need to map back to original positions
-                warnings.push(
-                  "Script transformation in Astro files is experimental",
+
+              if (result != null) {
+                // Adjust positions for expression
+                const offset = childNode.position?.start?.offset ?? 0;
+                const adjustedReplacements = result.replacements.map(
+                  (replacement) => ({
+                    ...replacement,
+                    end: replacement.end + offset,
+                    start: replacement.start + offset,
+                  }),
                 );
+
+                allReplacements.push(...adjustedReplacements);
               }
             }
-          } catch (transformError) {
-            warnings.push(
-              `Failed to transform Astro to JS: ${String(transformError)}`,
-            );
           }
-        }
 
-        return { code: transformedCode, warnings };
+          if (
+            astroUtilMod.is.element(node) &&
+            node.name === "script" &&
+            node.children.length > 0
+          ) {
+            for (const childNode of node.children) {
+              if (!astroUtilMod.is.text(childNode)) {
+                continue;
+              }
+
+              const tsCode = childNode.value;
+              const result = processJavaScriptContent(
+                tsCode,
+                resolveRules,
+                warnings,
+              );
+
+              if (result != null) {
+                // Adjust positions for script tag content
+                const offset = childNode.position?.start?.offset ?? 0;
+                const adjustedReplacements = result.replacements.map(
+                  (replacement) => ({
+                    ...replacement,
+                    end: replacement.end + offset,
+                    start: replacement.start + offset,
+                  }),
+                );
+
+                allReplacements.push(...adjustedReplacements);
+              }
+            }
+          }
+        });
+
+        return {
+          replacements: allReplacements,
+          warnings,
+        };
       } catch (error) {
         warnings.push(
           `Failed to process Astro file. id: ${id}, error: ${String(error)}`,
         );
-        return { code, warnings };
+        return { replacements: [], warnings };
       }
     },
   };
@@ -105,7 +142,7 @@ function processJavaScriptContent(
   content: string,
   resolveRules: ResolveRules,
   warnings: string[],
-): string | null {
+): { replacements: CodeReplacement[] } | null {
   try {
     const ast = parseProgram(content);
     const extractResult = extractImportMetaReplacements(ast, resolveRules);
@@ -122,7 +159,7 @@ function processJavaScriptContent(
       return null;
     }
 
-    return transformWithReplacements(content, extractResult.replacements);
+    return extractResult;
   } catch (error) {
     warnings.push(
       `Failed to parse JavaScript content in Astro file: ${String(error)}`,
