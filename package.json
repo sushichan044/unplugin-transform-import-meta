@@ -86,9 +86,6 @@
   "peerDependenciesMeta": {
     "@astrojs/compiler": {
       "optional": true
-    },
-    "svelte": {
-      "optional": true
     }
   },
   "devDependencies": {
@@ -105,7 +102,6 @@
     "publint": "0.3.12",
     "release-it": "19.0.4",
     "release-it-pnpm": "4.6.6",
-    "svelte": "^5.17.0",
     "tsdown": "0.14.2",
     "typescript": "5.9.2",
     "typescript-eslint": "8.41.0",

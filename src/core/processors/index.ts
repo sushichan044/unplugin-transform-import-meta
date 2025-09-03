@@ -2,10 +2,9 @@ import type { LanguageProcessor } from "./types";
 
 import { createAstroProcessor } from "./astro";
 import { createECMAScriptProcessor } from "./ecmascript";
-import { createSvelteProcessor } from "./svelte";
 import { createVueProcessor } from "./vue";
 
-type SupportedLanguage = "astro" | "ecma" | "svelte" | "vue";
+type SupportedLanguage = "astro" | "ecma" | "vue";
 
 export async function createProcessor(id: string): Promise<LanguageProcessor> {
   const lang = detectLanguage(id);
@@ -16,9 +15,6 @@ export async function createProcessor(id: string): Promise<LanguageProcessor> {
     }
     case "ecma": {
       return createECMAScriptProcessor();
-    }
-    case "svelte": {
-      return createSvelteProcessor();
     }
     case "vue": {
       return await createVueProcessor();
@@ -35,9 +31,6 @@ export async function createProcessor(id: string): Promise<LanguageProcessor> {
 export function detectLanguage(filename: string): SupportedLanguage {
   if (filename.endsWith(".astro")) {
     return "astro";
-  }
-  if (filename.endsWith(".svelte")) {
-    return "svelte";
   }
   if (filename.endsWith(".vue")) {
     return "vue";
