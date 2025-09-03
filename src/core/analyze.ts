@@ -1,6 +1,6 @@
 import type { TSESTree } from "@typescript-eslint/typescript-estree";
 
-import { AST_NODE_TYPES } from "@typescript-eslint/typescript-estree";
+import { AST_NODE_TYPES, parse } from "@typescript-eslint/typescript-estree";
 import { walk } from "zimmerframe";
 
 import type { LiteralValue, ResolveRules } from "./options";
@@ -8,7 +8,7 @@ import type { CodeReplacement } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
 
-interface ExtractionWarning {
+interface AnalysisWarning {
   end: number;
   message: string;
   methodName: string;
@@ -19,25 +19,31 @@ interface ExtractionWarning {
   start: number;
 }
 
-interface ImportMetaAnalysisResult {
+interface AnalysisResult {
   replacements: CodeReplacement[];
-  warnings: ExtractionWarning[];
+  warnings: AnalysisWarning[];
 }
 
-export function extractImportMetaReplacements(
-  ast: TSESTree.Node,
+/**
+ * Analyze the TypeScript code and return the replacements and warnings.
+ * @param code - The TypeScript code to analyze.
+ * @param resolveRules - The resolve rules to use.
+ * @returns
+ */
+export function analyzeTypeScript(
+  code: string,
   resolveRules: ResolveRules,
-): ImportMetaAnalysisResult {
+): AnalysisResult {
+  const ast = parseProgram(code);
   const transformations: CodeReplacement[] = [];
-  const warnings: ExtractionWarning[] = [];
+  const warnings: AnalysisWarning[] = [];
 
   walk(
     ast,
     {},
     {
-      MemberExpression: (node, c) => {
+      MemberExpression: (node) => {
         if (!isImportMetaExpression(node)) {
-          // Not an import.meta expression; continue walking normally
           return;
         }
 
@@ -57,14 +63,13 @@ export function extractImportMetaReplacements(
         }
       },
 
-      CallExpression: (node, c) => {
+      CallExpression: (node) => {
         if (
           !(
             node.callee.type === AST_NODE_TYPES.MemberExpression &&
             isImportMetaExpression(node.callee)
           )
         ) {
-          // Not a call on import.meta; continue walking normally
           return;
         }
 
@@ -119,6 +124,26 @@ export function extractImportMetaReplacements(
   };
 }
 
+/**
+ * Check if the node is an import meta expression.
+ * @param node - The node to check.
+ * @returns True if the node is an import meta expression, false otherwise.
+ */
+function isImportMetaExpression(node: TSESTree.MemberExpression): boolean {
+  const path = findImportMetaPath(node);
+  return path.length > 0;
+}
+
+function getAccessPath(node: TSESTree.MemberExpression): string | null {
+  const path = findImportMetaPath(node);
+  return path.length > 0 ? path.join(".") : null;
+}
+
+/**
+ * Find the import meta path from the node.
+ * @param node - The node to find the import meta path from.
+ * @returns The import meta path.
+ */
 function findImportMetaPath(node: TSESTree.MemberExpression): string[] {
   const path: string[] = [];
   let current = node;
@@ -146,12 +171,17 @@ function findImportMetaPath(node: TSESTree.MemberExpression): string[] {
   return [];
 }
 
-function isImportMetaExpression(node: TSESTree.MemberExpression): boolean {
-  const path = findImportMetaPath(node);
-  return path.length > 0;
-}
+function parseProgram(code: string): TSESTree.Node {
+  const ast = parse(code, {
+    comment: true,
+    jsDocParsingMode: "none",
+    loc: true,
+    project: false,
+    range: true,
+    sourceType: "module",
+    suppressDeprecatedPropertyWarnings: true,
+    tokens: false,
+  });
 
-function getAccessPath(node: TSESTree.MemberExpression): string | null {
-  const path = findImportMetaPath(node);
-  return path.length > 0 ? path.join(".") : null;
+  return ast;
 }

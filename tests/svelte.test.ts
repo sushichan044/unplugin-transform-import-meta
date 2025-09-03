@@ -35,7 +35,8 @@ describe("Svelte support", () => {
   <p>API URL: {apiUrl}</p>
 </main>`;
 
-    const processor = createProcessor("test.svelte");
+    const processor = await createProcessor("test.svelte");
+
     const result = await processor.transform(
       source,
       "test.svelte",
@@ -44,9 +45,14 @@ describe("Svelte support", () => {
 
     // Svelte script processing is not implemented, expect no replacements
     expect(result.replacements).toHaveLength(0);
-    const transformedCode = transformWithReplacements(source, result.replacements);
+    const transformedCode = transformWithReplacements(
+      source,
+      result.replacements,
+    );
     expect(transformedCode).toBe(source); // Should be unchanged
-    expect(result.warnings).toContain("Script tag processing in Svelte files is not yet fully implemented");
+    expect(result.warnings).toContain(
+      "Script tag processing in Svelte files is not yet fully implemented",
+    );
   });
 
   it("should transform import.meta in Svelte script module", async () => {
@@ -72,7 +78,7 @@ describe("Svelte support", () => {
   <p>Version: {version}</p>
 </main>`;
 
-    const processor = createProcessor("test.svelte");
+    const processor = await createProcessor("test.svelte");
     const result = await processor.transform(
       source,
       "test.svelte",
@@ -81,9 +87,14 @@ describe("Svelte support", () => {
 
     // Svelte module script processing is not implemented, expect no replacements
     expect(result.replacements).toHaveLength(0);
-    const transformedCode = transformWithReplacements(source, result.replacements);
+    const transformedCode = transformWithReplacements(
+      source,
+      result.replacements,
+    );
     expect(transformedCode).toBe(source); // Should be unchanged
-    expect(result.warnings).toContain("Module script processing in Svelte files is not yet fully implemented");
+    expect(result.warnings).toContain(
+      "Module script processing in Svelte files is not yet fully implemented",
+    );
   });
 
   it("should handle Svelte file without import.meta", async () => {
@@ -102,14 +113,17 @@ describe("Svelte support", () => {
       },
     };
 
-    const processor = createProcessor("test.svelte");
+    const processor = await createProcessor("test.svelte");
     const result = await processor.transform(
       source,
       "test.svelte",
       resolveRules,
     );
 
-    const transformedCode = transformWithReplacements(source, result.replacements);
+    const transformedCode = transformWithReplacements(
+      source,
+      result.replacements,
+    );
     expect(transformedCode).toBe(source);
     expect(result.warnings).toHaveLength(0);
   });
@@ -130,19 +144,19 @@ describe("Svelte support", () => {
 
 <main>
   <h1>{title}</h1>
-  
+
   {#if import.meta.env.DEBUG}
     <div>Debug mode</div>
   {/if}
-  
+
   <div class="{import.meta.env.THEME}">
     Themed content
   </div>
-  
+
   <img bind:src={import.meta.env.IMAGE_URL} alt="Dynamic image" />
 </main>`;
 
-    const processor = createProcessor("test.svelte");
+    const processor = await createProcessor("test.svelte");
     const result = await processor.transform(
       source,
       "test.svelte",
@@ -151,7 +165,10 @@ describe("Svelte support", () => {
 
     // Template expressions are not implemented
     expect(result.replacements).toHaveLength(0);
-    const transformedCode = transformWithReplacements(source, result.replacements);
+    const transformedCode = transformWithReplacements(
+      source,
+      result.replacements,
+    );
     expect(transformedCode).toBe(source); // Should be unchanged
   });
 });

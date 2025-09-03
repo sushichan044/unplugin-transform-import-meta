@@ -37,7 +37,7 @@ const baseUrl = import.meta.env.BASE_URL;
 </body>
 </html>`;
 
-    const processor = createProcessor("test.astro");
+    const processor = await createProcessor("test.astro");
     const result = await processor.transform(
       source,
       "test.astro",
@@ -97,7 +97,7 @@ const title = "Astro Test Page";
       },
     };
 
-    const processor = createProcessor("test.astro");
+    const processor = await createProcessor("test.astro");
     const result = await processor.transform(
       source,
       "test.astro",
@@ -153,7 +153,7 @@ const title = "Simple Astro Page";
       },
     };
 
-    const processor = createProcessor("test.astro");
+    const processor = await createProcessor("test.astro");
     const result = await processor.transform(
       source,
       "test.astro",
@@ -192,7 +192,7 @@ const title = "Astro Test Page";
       },
     };
 
-    const processor = createProcessor("test.astro");
+    const processor = await createProcessor("test.astro");
     const result = await processor.transform(
       source,
       "test.astro",
@@ -247,7 +247,7 @@ const frontmatterUrl = import.meta.env.BASE_URL;
       },
     };
 
-    const processor = createProcessor("test.astro");
+    const processor = await createProcessor("test.astro");
     const result = await processor.transform(
       source,
       "test.astro",

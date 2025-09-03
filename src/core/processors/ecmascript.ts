@@ -1,8 +1,7 @@
 import type { ResolveRules } from "../options";
 import type { LanguageProcessor, TransformResult } from "./types";
 
-import { extractImportMetaReplacements } from "../extract";
-import { parseProgram } from "../parse";
+import { analyzeTypeScript } from "../analyze";
 
 /**
  * @package
@@ -17,9 +16,7 @@ export function createECMAScriptProcessor(): LanguageProcessor {
       const warnings: string[] = [];
 
       try {
-        const ast = parseProgram(code);
-
-        const result = extractImportMetaReplacements(ast, resolveRules);
+        const result = analyzeTypeScript(code, resolveRules);
 
         if (result.warnings.length > 0) {
           warnings.push(

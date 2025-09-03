@@ -40,7 +40,7 @@ export const unpluginTransformImportMeta: UnpluginInstance<
         }
 
         try {
-          const processor = createProcessor(id);
+          const processor = await createProcessor(id);
 
           const transformResult = await processor.transform(
             code,

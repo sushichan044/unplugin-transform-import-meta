@@ -3,10 +3,24 @@ import type { CodeReplacement } from "../types";
 import type { LanguageProcessor, TransformResult } from "./types";
 
 import { tryImport } from "../../utils/import";
-import { extractImportMetaReplacements } from "../extract";
-import { parseProgram } from "../parse";
+import { analyzeTypeScript } from "../analyze";
 
-export function createAstroProcessor(): LanguageProcessor {
+export async function createAstroProcessor(): Promise<LanguageProcessor> {
+  const astroMod =
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    await tryImport<typeof import("@astrojs/compiler")>("@astrojs/compiler");
+
+  const astroUtilMod = await tryImport<
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    typeof import("@astrojs/compiler/utils")
+  >("@astrojs/compiler/utils");
+
+  if (astroMod == null || astroUtilMod == null) {
+    throw new Error(
+      "Failed to import @astrojs/compiler or @astrojs/compiler/utils",
+    );
+  }
+
   return {
     async transform(
       code: string,
@@ -14,21 +28,6 @@ export function createAstroProcessor(): LanguageProcessor {
       resolveRules: ResolveRules,
     ): Promise<TransformResult> {
       const warnings: string[] = [];
-
-      const astroMod =
-        // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-        await tryImport<typeof import("@astrojs/compiler")>(
-          "@astrojs/compiler",
-        );
-
-      const astroUtilMod = await tryImport<
-        // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-        typeof import("@astrojs/compiler/utils")
-      >("@astrojs/compiler/utils");
-
-      if (astroMod == null || astroUtilMod == null) {
-        return { replacements: [], warnings };
-      }
 
       const allReplacements: CodeReplacement[] = [];
       try {
@@ -39,12 +38,7 @@ export function createAstroProcessor(): LanguageProcessor {
 
         astroUtilMod.walk(parseResult.ast, (node) => {
           if (astroUtilMod.is.frontmatter(node)) {
-            const tsCode = node.value;
-            const result = processJavaScriptContent(
-              tsCode,
-              resolveRules,
-              warnings,
-            );
+            const result = analyzeTypeScript(node.value, resolveRules);
 
             if (result != null) {
               // Adjust positions for frontmatter
@@ -66,13 +60,7 @@ export function createAstroProcessor(): LanguageProcessor {
               if (!astroUtilMod.is.text(childNode)) {
                 continue;
               }
-
-              const tsCode = childNode.value;
-              const result = processJavaScriptContent(
-                tsCode,
-                resolveRules,
-                warnings,
-              );
+              const result = analyzeTypeScript(childNode.value, resolveRules);
 
               if (result != null) {
                 // Adjust positions for expression
@@ -100,12 +88,7 @@ export function createAstroProcessor(): LanguageProcessor {
                 continue;
               }
 
-              const tsCode = childNode.value;
-              const result = processJavaScriptContent(
-                tsCode,
-                resolveRules,
-                warnings,
-              );
+              const result = analyzeTypeScript(childNode.value, resolveRules);
 
               if (result != null) {
                 // Adjust positions for script tag content
@@ -136,34 +119,4 @@ export function createAstroProcessor(): LanguageProcessor {
       }
     },
   };
-}
-
-function processJavaScriptContent(
-  content: string,
-  resolveRules: ResolveRules,
-  warnings: string[],
-): { replacements: CodeReplacement[] } | null {
-  try {
-    const ast = parseProgram(content);
-    const extractResult = extractImportMetaReplacements(ast, resolveRules);
-
-    if (extractResult.warnings.length > 0) {
-      warnings.push(
-        ...extractResult.warnings.map(
-          (w) => `Warning: ${w.message} at ${w.start}-${w.end}`,
-        ),
-      );
-    }
-
-    if (extractResult.replacements.length === 0) {
-      return null;
-    }
-
-    return extractResult;
-  } catch (error) {
-    warnings.push(
-      `Failed to parse JavaScript content in Astro file: ${String(error)}`,
-    );
-    return null;
-  }
 }

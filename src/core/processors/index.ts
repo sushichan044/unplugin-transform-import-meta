@@ -7,12 +7,12 @@ import { createVueProcessor } from "./vue";
 
 type SupportedLanguage = "astro" | "ecma" | "svelte" | "vue";
 
-export function createProcessor(id: string): LanguageProcessor {
+export async function createProcessor(id: string): Promise<LanguageProcessor> {
   const lang = detectLanguage(id);
 
   switch (lang) {
     case "astro": {
-      return createAstroProcessor();
+      return await createAstroProcessor();
     }
     case "ecma": {
       return createECMAScriptProcessor();
@@ -21,7 +21,7 @@ export function createProcessor(id: string): LanguageProcessor {
       return createSvelteProcessor();
     }
     case "vue": {
-      return createVueProcessor();
+      return await createVueProcessor();
     }
 
     default: {

@@ -1,17 +1,22 @@
 import type { SFCDescriptor, SFCScriptBlock } from "@vue/compiler-sfc";
 
-import { parse as parseSFC } from "@vue/compiler-sfc";
-
 import type { ResolveRules } from "../options";
 import type { LanguageProcessor, TransformResult } from "./types";
 
-import { extractImportMetaReplacements } from "../extract";
-import { parseProgram } from "../parse";
+import { tryImport } from "../../utils/import";
+import { analyzeTypeScript } from "../analyze";
 
 /**
  * @package
  */
-export function createVueProcessor(): LanguageProcessor {
+export async function createVueProcessor(): Promise<LanguageProcessor> {
+  const vueMod =
+    // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+    await tryImport<typeof import("@vue/compiler-sfc")>("@vue/compiler-sfc");
+  if (vueMod == null) {
+    throw new Error("Failed to import @vue/compiler-sfc");
+  }
+
   return {
     transform(
       code: string,
@@ -21,7 +26,7 @@ export function createVueProcessor(): LanguageProcessor {
       const warnings: string[] = [];
 
       try {
-        const { descriptor } = parseSFC(code, {
+        const { descriptor } = vueMod.parse(code, {
           filename: id,
           sourceMap: false,
         });
@@ -39,12 +44,7 @@ export function createVueProcessor(): LanguageProcessor {
           return { replacements: [], warnings };
         }
 
-        const scriptAst = parseProgram(scriptContent);
-        const extractResult = extractImportMetaReplacements(
-          scriptAst,
-          resolveRules,
-        );
-
+        const extractResult = analyzeTypeScript(scriptContent, resolveRules);
         if (extractResult.warnings.length > 0) {
           warnings.push(
             ...extractResult.warnings.map(

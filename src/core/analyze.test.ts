@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import type { ResolveRules } from "../src/core/options";
+import type { ResolveRules } from "./options";
 
-import { extractImportMetaReplacements } from "../src/core/extract";
-import { parseProgram } from "../src/core/parse";
-import { transformWithReplacements } from "../src/core/transform";
+import { analyzeTypeScript } from "./analyze";
+import { transformWithReplacements } from "./transform";
 
-describe("extractImportMetaReplacements", () => {
+describe("analyzeTypeScript", () => {
   type BasicTestCase = {
     code: string;
     expectedReplacements: number;
@@ -87,8 +86,7 @@ describe("extractImportMetaReplacements", () => {
       expectedWarnings,
       resolveRules,
     }) => {
-      const ast = parseProgram(code.trim());
-      const result = extractImportMetaReplacements(ast, resolveRules);
+      const result = analyzeTypeScript(code.trim(), resolveRules);
 
       expect(result.replacements).toHaveLength(expectedReplacements);
       expect(result.warnings).toHaveLength(expectedWarnings);
@@ -109,7 +107,6 @@ const foo = import.meta.foo;
 const env = import.meta.NODE_ENV;
 const resolved = import.meta.resolve('./file');
     `.trim();
-    const ast = parseProgram(code);
 
     const resolveRules: ResolveRules = {
       methods: {
@@ -120,8 +117,8 @@ const resolved = import.meta.resolve('./file');
         NODE_ENV: "development",
       },
     };
+    const result = analyzeTypeScript(code, resolveRules);
 
-    const result = extractImportMetaReplacements(ast, resolveRules);
     expect(result.replacements).toHaveLength(3);
     expect(result.warnings).toHaveLength(0);
 
@@ -140,7 +137,6 @@ const config = {
   version: import.meta.getVersion('1.0.0')
 };
     `.trim();
-    const ast = parseProgram(code);
 
     const resolveRules: ResolveRules = {
       methods: {
@@ -151,7 +147,7 @@ const config = {
       },
     };
 
-    const result = extractImportMetaReplacements(ast, resolveRules);
+    const result = analyzeTypeScript(code, resolveRules);
     expect(result.replacements).toHaveLength(2);
     expect(result.warnings).toHaveLength(0);
 
@@ -170,16 +166,13 @@ const variableArg = "./file.js";
 const resolved = import.meta.resolve(variableArg);
 const mixed = import.meta.resolve("literal", someVar, 123);
     `.trim();
-
-    const ast = parseProgram(code);
-
     const resolveRules: ResolveRules = {
       methods: {
         resolve: (path) => `resolved:${String(path)}`,
       },
     };
 
-    const result = extractImportMetaReplacements(ast, resolveRules);
+    const result = analyzeTypeScript(code, resolveRules);
 
     expect(result.warnings).toMatchInlineSnapshot(`
       [

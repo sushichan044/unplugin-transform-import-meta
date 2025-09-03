@@ -37,10 +37,14 @@ div {
       },
     };
 
-    const processor = createProcessor("test.vue");
+    const processor = await createProcessor("test.vue");
+
     const result = await processor.transform(source, "test.vue", resolveRules);
 
-    const transformedCode = transformWithReplacements(source, result.replacements);
+    const transformedCode = transformWithReplacements(
+      source,
+      result.replacements,
+    );
     expect(transformedCode).toContain('"development"');
     expect(transformedCode).not.toContain("import.meta.env.NODE_ENV");
     expect(result.warnings).toHaveLength(0);
@@ -70,10 +74,14 @@ div {
       },
     };
 
-    const processor = createProcessor("test.vue");
+    const processor = await createProcessor("test.vue");
+
     const result = await processor.transform(source, "test.vue", resolveRules);
 
-    const transformedCode = transformWithReplacements(source, result.replacements);
+    const transformedCode = transformWithReplacements(
+      source,
+      result.replacements,
+    );
     expect(transformedCode).toBe(source);
     expect(result.warnings).toHaveLength(0);
   });
@@ -110,10 +118,14 @@ div {
       },
     };
 
-    const processor = createProcessor("test.vue");
+    const processor = await createProcessor("test.vue");
+
     const result = await processor.transform(source, "test.vue", resolveRules);
 
-    const transformedCode = transformWithReplacements(source, result.replacements);
+    const transformedCode = transformWithReplacements(
+      source,
+      result.replacements,
+    );
     expect(transformedCode).toContain('"production"');
     expect(transformedCode).not.toContain("import.meta.env.NODE_ENV");
     expect(result.warnings).toHaveLength(0);
