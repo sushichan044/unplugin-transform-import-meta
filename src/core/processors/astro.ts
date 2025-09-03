@@ -1,9 +1,19 @@
+import type {
+  Node as AstroNode,
+  ComponentNode,
+  CustomElementNode,
+  ElementNode,
+} from "@astrojs/compiler/types";
+
+import { walk } from "zimmerframe";
+
 import type { ResolveRules } from "../options";
 import type { CodeReplacement } from "../types";
 import type { LanguageProcessor, TransformResult } from "./types";
 
 import { tryImport } from "../../utils/import";
 import { analyzeTypeScript } from "../analyze";
+import { includesImportMeta } from "../index";
 
 export async function createAstroProcessor(): Promise<LanguageProcessor> {
   const astroMod =
@@ -17,7 +27,7 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
 
   if (astroMod == null || astroUtilMod == null) {
     throw new Error(
-      "Failed to import @astrojs/compiler or @astrojs/compiler/utils",
+      "Failed to import @astrojs/compiler. Please install it to process .astro files.",
     );
   }
 
@@ -27,96 +37,122 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
       id: string,
       resolveRules: ResolveRules,
     ): Promise<TransformResult> {
-      const warnings: string[] = [];
+      const parseResult = await astroMod.parse(code, {
+        position: true,
+      });
 
       const allReplacements: CodeReplacement[] = [];
-      try {
-        // First extract and transform frontmatter
-        const parseResult = await astroMod.parse(code, {
-          position: true,
-        });
+      const warnings: string[] = [];
 
-        astroUtilMod.walk(parseResult.ast, (node) => {
-          if (astroUtilMod.is.frontmatter(node)) {
+      walk<AstroNode, Record<string, never>>(
+        parseResult.ast,
+        {},
+        {
+          frontmatter: (node) => {
+            if (!includesImportMeta(node.value)) {
+              return;
+            }
+
             const result = analyzeTypeScript(node.value, resolveRules);
+            const s = node.position?.start?.offset ?? 0;
+            const offset = s + 3; // 3: length of "---"
 
-            if (result != null) {
-              // Adjust positions for frontmatter
+            const adjustedReplacements = result.replacements.map(
+              (replacement) => ({
+                ...replacement,
+                end: replacement.end + offset,
+                start: replacement.start + offset,
+              }),
+            );
+            allReplacements.push(...adjustedReplacements);
+          },
+
+          element: (node, c) => {
+            allReplacements.push(...handleTagNode(node, resolveRules));
+            c.next();
+          },
+
+          component: (node, c) => {
+            allReplacements.push(...handleTagNode(node, resolveRules));
+            c.next();
+          },
+
+          "custom-element": (node, c) => {
+            allReplacements.push(...handleTagNode(node, resolveRules));
+            c.next();
+          },
+
+          text: (node, c) => {
+            const parent = c.path.at(-1);
+
+            // We can write TS code only in <script> tag
+            if (parent?.type === "element" && parent.name === "script") {
+              const result = analyzeTypeScript(node.value, resolveRules);
               const offset = node.position?.start?.offset ?? 0;
+
               const adjustedReplacements = result.replacements.map(
                 (replacement) => ({
                   ...replacement,
-                  end: replacement.end + offset + 3,
-                  start: replacement.start + offset + 3, // +3 for '---'
+                  end: replacement.end + offset,
+                  start: replacement.start + offset,
                 }),
               );
-
               allReplacements.push(...adjustedReplacements);
             }
-          }
+          },
 
-          if (astroUtilMod.is.expression(node) && node.children.length > 0) {
-            for (const childNode of node.children) {
-              if (!astroUtilMod.is.text(childNode)) {
-                continue;
-              }
-              const result = analyzeTypeScript(childNode.value, resolveRules);
+          expression: (node) => {
+            // serialize the expression to a block statement to parse whole expression
+            const blockStmt = astroUtilMod.serialize(node);
+            const result = analyzeTypeScript(blockStmt, resolveRules);
 
-              if (result != null) {
-                // Adjust positions for expression
-                const offset = childNode.position?.start?.offset ?? 0;
-                const adjustedReplacements = result.replacements.map(
-                  (replacement) => ({
-                    ...replacement,
-                    end: replacement.end + offset,
-                    start: replacement.start + offset,
-                  }),
-                );
+            const s = node.position?.start?.offset ?? 0;
+            const offset = s + 1; // 1: length of "{"
 
-                allReplacements.push(...adjustedReplacements);
-              }
-            }
-          }
+            const adjustedReplacements = result.replacements.map(
+              (replacement) => ({
+                ...replacement,
+                end: replacement.end + offset,
+                start: replacement.start + offset,
+              }),
+            );
+            allReplacements.push(...adjustedReplacements);
+          },
+        },
+      );
 
-          if (
-            astroUtilMod.is.element(node) &&
-            node.name === "script" &&
-            node.children.length > 0
-          ) {
-            for (const childNode of node.children) {
-              if (!astroUtilMod.is.text(childNode)) {
-                continue;
-              }
-
-              const result = analyzeTypeScript(childNode.value, resolveRules);
-
-              if (result != null) {
-                // Adjust positions for script tag content
-                const offset = childNode.position?.start?.offset ?? 0;
-                const adjustedReplacements = result.replacements.map(
-                  (replacement) => ({
-                    ...replacement,
-                    end: replacement.end + offset,
-                    start: replacement.start + offset,
-                  }),
-                );
-
-                allReplacements.push(...adjustedReplacements);
-              }
-            }
-          }
-        });
-
-        return {
-          replacements: allReplacements,
-          warnings,
-        };
-      } catch (error) {
-        warnings.push(
-          `Failed to process Astro file. id: ${id}, error: ${String(error)}`,
-        );
-        return { replacements: [], warnings };
-      }
+      return {
+        replacements: allReplacements,
+        warnings,
+      };
     },
   };
+}
+
+function handleTagNode(
+  node: ComponentNode | CustomElementNode | ElementNode,
+  resolveRules: ResolveRules,
+): CodeReplacement[] {
+  const allReplacements: CodeReplacement[] = [];
+
+  for (const attr of node.attributes) {
+    if (attr.kind === "empty" || attr.kind === "quoted") {
+      continue;
+    }
+
+    if (includesImportMeta(attr.value)) {
+      const result = analyzeTypeScript(attr.value, resolveRules);
+      const s = attr.position?.start?.offset ?? 0;
+      const offset = s + attr.name.length + 2; // 2: length of "={"
+
+      const adjustedReplacements = result.replacements.map((replacement) => ({
+        ...replacement,
+        end: replacement.end + offset,
+        start: replacement.start + offset,
+      }));
+      allReplacements.push(...adjustedReplacements);
+    }
+  }
+
+  return allReplacements;
 }
