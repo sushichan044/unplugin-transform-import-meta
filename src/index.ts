@@ -5,9 +5,9 @@ import { createUnplugin } from "unplugin";
 import type { Options } from "./core/options";
 import type { Writeable } from "./utils/types";
 
+import { applyReplacements } from "./core/apply";
 import { resolveOptions } from "./core/options";
-import { createProcessor } from "./core/processors";
-import { transformWithReplacements } from "./core/transform";
+import { createProcessor, detectLanguage } from "./core/processors";
 
 export type { Options, ResolveRules } from "./core/options";
 
@@ -36,12 +36,16 @@ export const unpluginTransformImportMeta: UnpluginInstance<
       },
       async handler(this, code, id) {
         if (Object.keys(options.resolveRules).length === 0) {
-          return code;
+          return;
+        }
+
+        const lang = detectLanguage(id);
+        if (lang == null) {
+          return;
         }
 
         try {
-          const processor = await createProcessor(id);
-
+          const processor = await createProcessor(lang);
           const transformResult = await processor.transform(
             code,
             id,
@@ -56,7 +60,7 @@ export const unpluginTransformImportMeta: UnpluginInstance<
             return code;
           }
 
-          return transformWithReplacements(code, transformResult.replacements);
+          return applyReplacements(code, transformResult.replacements);
         } catch (error) {
           console.warn(`Failed to transform import.meta in code:`, error);
           return code;

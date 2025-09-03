@@ -3,11 +3,13 @@ import type { TSESTree } from "@typescript-eslint/typescript-estree";
 import { AST_NODE_TYPES, parse } from "@typescript-eslint/typescript-estree";
 import { walk } from "zimmerframe";
 
-import type { LiteralValue, ResolveRules } from "./options";
+import type { ResolveRules } from "./options";
+import type { LiteralValue } from "./serialize";
 import type { CodeReplacement } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
 import { includesImportMeta } from "./index";
+import { serializeLiteralValue } from "./serialize";
 
 interface AnalysisWarning {
   end: number;
@@ -51,23 +53,21 @@ export function analyzeTypeScript(
     {},
     {
       MemberExpression: (node, c) => {
-        if (!isImportMetaExpression(node)) {
-          return;
-        }
-
-        const accessPath = getAccessPath(node);
-        if (
-          isNonEmptyString(accessPath) &&
-          resolveRules.properties?.[accessPath] !== undefined
-        ) {
-          const replacement = JSON.stringify(
-            resolveRules.properties[accessPath],
-          );
-          transformations.push({
-            end: node.range[1],
-            replacement,
-            start: node.range[0],
-          });
+        if (isImportMetaExpression(node)) {
+          const accessPath = getAccessPath(node);
+          if (
+            isNonEmptyString(accessPath) &&
+            resolveRules.properties?.[accessPath] != null
+          ) {
+            const replacement = serializeLiteralValue(
+              resolveRules.properties[accessPath],
+            );
+            transformations.push({
+              end: node.range[1],
+              replacement,
+              start: node.range[0],
+            });
+          }
         }
 
         c.next();
@@ -113,7 +113,7 @@ export function analyzeTypeScript(
 
             try {
               const result = resolveRules.methods[methodPath](...literalArgs);
-              const replacement = JSON.stringify(result);
+              const replacement = serializeLiteralValue(result);
 
               transformations.push({
                 end: node.range[1],

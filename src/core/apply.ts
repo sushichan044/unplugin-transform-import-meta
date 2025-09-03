@@ -2,11 +2,11 @@ import MagicString from "magic-string";
 
 import type { CodeReplacement } from "./types";
 
-export function transformWithReplacements(
-  code: string,
+export function applyReplacements(
+  source: string,
   replacements: CodeReplacement[],
 ): string {
-  const magicString = new MagicString(code);
+  const magicString = new MagicString(source);
 
   for (const { end, replacement, start } of replacements) {
     magicString.overwrite(start, end, replacement);

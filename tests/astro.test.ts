@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import type { ResolveRules } from "../src";
 
+import { applyReplacements } from "../src/core/apply";
 import { createProcessor, detectLanguage } from "../src/core/processors";
-import { transformWithReplacements } from "../src/core/transform";
 
 describe("Astro support", () => {
   it("should detect Astro files", () => {
@@ -34,17 +34,14 @@ describe("Astro support", () => {
       },
     };
 
-    const processor = await createProcessor("test.astro");
+    const processor = await createProcessor("astro");
     const result = await processor.transform(
       source,
-      "test.astro",
+      "before.astro",
       resolveRules,
     );
 
-    const transformedCode = transformWithReplacements(
-      source,
-      result.replacements,
-    );
+    const transformedCode = applyReplacements(source, result.replacements);
 
     await expect(transformedCode).toMatchFileSnapshot(
       "fixtures/astro/after.astro",

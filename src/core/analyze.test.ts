@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ResolveRules } from "./options";
 
 import { analyzeTypeScript } from "./analyze";
-import { transformWithReplacements } from "./transform";
+import { applyReplacements } from "./apply";
 
 describe("analyzeTypeScript", () => {
   describe("no-op", () => {
@@ -30,7 +30,7 @@ describe("analyzeTypeScript", () => {
 
       const result = analyzeTypeScript(code, resolveRules);
       expect(result.replacements).toHaveLength(1);
-      const transformed = transformWithReplacements(code, result.replacements);
+      const transformed = applyReplacements(code, result.replacements);
 
       expect(transformed).toMatchInlineSnapshot(`"const foo = true;"`);
     });
@@ -58,7 +58,7 @@ describe("analyzeTypeScript", () => {
       const result = analyzeTypeScript(code, resolveRules);
       expect(result.replacements).toHaveLength(1);
 
-      const transformed = transformWithReplacements(code, result.replacements);
+      const transformed = applyReplacements(code, result.replacements);
       expect(transformed).toMatchInlineSnapshot(`"console.log("production");"`);
     });
 
@@ -73,10 +73,22 @@ describe("analyzeTypeScript", () => {
       const result = analyzeTypeScript(code, resolveRules);
       expect(result.replacements).toHaveLength(1);
 
-      const transformed = transformWithReplacements(code, result.replacements);
+      const transformed = applyReplacements(code, result.replacements);
       expect(transformed).toMatchInlineSnapshot(
         `"const nested = "localhost";"`,
       );
+    });
+
+    it("should handle regular expressions", () => {
+      const code = "const a = import.meta.a;";
+      const resolveRules: ResolveRules = {
+        properties: { a: /regex/ },
+      };
+      const result = analyzeTypeScript(code, resolveRules);
+      expect(result.replacements).toHaveLength(1);
+
+      const transformed = applyReplacements(code, result.replacements);
+      expect(transformed).toMatchInlineSnapshot(`"const a = /regex/;"`);
     });
   });
 
@@ -92,7 +104,7 @@ describe("analyzeTypeScript", () => {
       const result = analyzeTypeScript(code, resolveRules);
       expect(result.replacements).toHaveLength(1);
 
-      const transformed = transformWithReplacements(code, result.replacements);
+      const transformed = applyReplacements(code, result.replacements);
       expect(transformed).toMatchInlineSnapshot(
         `"const resolvedPath = "resolved/file";"`,
       );
@@ -109,7 +121,7 @@ describe("analyzeTypeScript", () => {
       const result = analyzeTypeScript(code, resolveRules);
       expect(result.replacements).toHaveLength(1);
 
-      const transformed = transformWithReplacements(code, result.replacements);
+      const transformed = applyReplacements(code, result.replacements);
       expect(transformed).toMatchInlineSnapshot(
         `"const resolvedPath = "resolved/test";"`,
       );
