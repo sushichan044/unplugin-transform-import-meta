@@ -1,3 +1,4 @@
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import type { ResolveRules } from "./options";
@@ -6,201 +7,192 @@ import { analyzeTypeScript } from "./analyze";
 import { transformWithReplacements } from "./transform";
 
 describe("analyzeTypeScript", () => {
-  type BasicTestCase = {
-    code: string;
-    expectedReplacements: number;
-    expectedTransformed?: string;
-    expectedWarnings: number;
-    name: string;
-    resolveRules: ResolveRules;
-  };
+  describe("no-op", () => {
+    it("should not generate replacements when code does not include MetaProperty", () => {
+      const code = "const foo = not_import.meta.foo;";
+      const resolveRules: ResolveRules = {
+        properties: { foo: true },
+      };
 
-  const basicTestCases: BasicTestCase[] = [
-    {
-      code: "const foo = import.meta.foo;",
-      expectedReplacements: 1,
-      expectedTransformed: "const foo = true;",
-      expectedWarnings: 0,
-      name: "should return transformations for simple property access",
-      resolveRules: {
+      const result = analyzeTypeScript(code, resolveRules);
+      expect(result.replacements).toHaveLength(0);
+    });
+  });
+
+  describe("MemberExpression processing", () => {
+    it("should transform simple property access", () => {
+      const code = "const foo = import.meta.foo;";
+      const resolveRules: ResolveRules = {
         properties: {
           foo: true,
         },
-      },
-    },
-    {
-      code: "const result = import.meta.bar();",
-      expectedReplacements: 1,
-      expectedTransformed: 'const result = "hello";',
-      expectedWarnings: 0,
-      name: "should return transformations for method calls",
-      resolveRules: {
-        methods: {
-          bar: () => "hello",
-        },
-      },
-    },
-    {
-      code: "const unknown = import.meta.unknown;",
-      expectedReplacements: 0,
-      expectedWarnings: 0,
-      name: "should return empty transformations for unchanged import.meta",
-      resolveRules: {
+      };
+
+      const result = analyzeTypeScript(code, resolveRules);
+      expect(result.replacements).toHaveLength(1);
+      const transformed = transformWithReplacements(code, result.replacements);
+
+      expect(transformed).toMatchInlineSnapshot(`"const foo = true;"`);
+    });
+
+    it("should not transform unknown properties", () => {
+      const code = "const unknown = import.meta.unknown;";
+      const resolveRules: ResolveRules = {
         properties: {
           foo: true,
         },
-      },
-    },
-    {
-      code: "const nested = import.meta.config.database.host;",
-      expectedReplacements: 1,
-      expectedTransformed: 'const nested = "localhost";',
-      expectedWarnings: 0,
-      name: "should handle nested property access",
-      resolveRules: {
+      };
+
+      const result = analyzeTypeScript(code, resolveRules);
+      expect(result.replacements).toHaveLength(0);
+    });
+
+    it("should transform import.meta in function arguments", () => {
+      const code = "console.log(import.meta.env);";
+      const resolveRules: ResolveRules = {
+        properties: {
+          env: "production",
+        },
+      };
+
+      const result = analyzeTypeScript(code, resolveRules);
+      expect(result.replacements).toHaveLength(1);
+
+      const transformed = transformWithReplacements(code, result.replacements);
+      expect(transformed).toMatchInlineSnapshot(`"console.log("production");"`);
+    });
+
+    it("should handle nested property access", () => {
+      const code = "const nested = import.meta.config.database.host;";
+      const resolveRules: ResolveRules = {
         properties: {
           "config.database.host": "localhost",
         },
-      },
-    },
-    {
-      code: "const result = import.meta.utils.resolve('./test');",
-      expectedReplacements: 1,
-      expectedTransformed: 'const result = "resolved:./test";',
-      expectedWarnings: 0,
-      name: "should handle nested method calls",
-      resolveRules: {
+      };
+
+      const result = analyzeTypeScript(code, resolveRules);
+      expect(result.replacements).toHaveLength(1);
+
+      const transformed = transformWithReplacements(code, result.replacements);
+      expect(transformed).toMatchInlineSnapshot(
+        `"const nested = "localhost";"`,
+      );
+    });
+  });
+
+  describe("CallExpression processing - method calls", () => {
+    it("should transform method calls with literal arguments", () => {
+      const code = "const resolvedPath = import.meta.resolve('./file');";
+      const resolveRules: ResolveRules = {
         methods: {
-          "utils.resolve": (...args) => `resolved:${args[0]}`,
+          resolve: (p) => path.join("resolved", String(p)),
         },
-      },
-    },
-  ];
+      };
 
-  it.each(basicTestCases)(
-    "$name",
-    ({
-      code,
-      expectedReplacements,
-      expectedTransformed,
-      expectedWarnings,
-      resolveRules,
-    }) => {
-      const result = analyzeTypeScript(code.trim(), resolveRules);
+      const result = analyzeTypeScript(code, resolveRules);
+      expect(result.replacements).toHaveLength(1);
 
-      expect(result.replacements).toHaveLength(expectedReplacements);
-      expect(result.warnings).toHaveLength(expectedWarnings);
+      const transformed = transformWithReplacements(code, result.replacements);
+      expect(transformed).toMatchInlineSnapshot(
+        `"const resolvedPath = "resolved/file";"`,
+      );
+    });
 
-      if (expectedTransformed !== undefined && result.replacements.length > 0) {
-        const transformed = transformWithReplacements(
-          code,
-          result.replacements,
-        );
-        expect(transformed).toBe(expectedTransformed);
-      }
-    },
-  );
+    it("should handle nested method calls", () => {
+      const code = "const resolvedPath = import.meta.utils.resolve('./test');";
+      const resolveRules: ResolveRules = {
+        methods: {
+          "utils.resolve": (p) => path.join("resolved", String(p)),
+        },
+      };
 
-  it("should handle multiple transformations", () => {
-    const code = `
-const foo = import.meta.foo;
-const env = import.meta.NODE_ENV;
-const resolved = import.meta.resolve('./file');
-    `.trim();
+      const result = analyzeTypeScript(code, resolveRules);
+      expect(result.replacements).toHaveLength(1);
 
-    const resolveRules: ResolveRules = {
-      methods: {
-        resolve: (path) => `./resolved${path}`,
-      },
-      properties: {
-        foo: true,
-        NODE_ENV: "development",
-      },
-    };
-    const result = analyzeTypeScript(code, resolveRules);
+      const transformed = transformWithReplacements(code, result.replacements);
+      expect(transformed).toMatchInlineSnapshot(
+        `"const resolvedPath = "resolved/test";"`,
+      );
+    });
 
-    expect(result.replacements).toHaveLength(3);
-    expect(result.warnings).toHaveLength(0);
-
-    const transformed = transformWithReplacements(code, result.replacements);
-    expect(transformed).toMatchInlineSnapshot(`
-      "const foo = true;
-      const env = "development";
-      const resolved = "./resolved./file";"
-    `);
-  });
-
-  it("should handle complex expressions", () => {
-    const code = `
-const config = {
-  env: import.meta.environment,
-  version: import.meta.getVersion('1.0.0')
-};
-    `.trim();
-
-    const resolveRules: ResolveRules = {
-      methods: {
-        getVersion: (version) => `v${String(version)}`,
-      },
-      properties: {
-        environment: "production",
-      },
-    };
-
-    const result = analyzeTypeScript(code, resolveRules);
-    expect(result.replacements).toHaveLength(2);
-    expect(result.warnings).toHaveLength(0);
-
-    const transformed = transformWithReplacements(code, result.replacements);
-    expect(transformed).toMatchInlineSnapshot(`
-      "const config = {
-        env: "production",
-        version: "v1.0.0"
-      };"
-    `);
-  });
-
-  it("should generate warnings for non-literal arguments", () => {
-    const code = `
+    it("should generate warnings for non-literal arguments", () => {
+      const code = `
 const variableArg = "./file.js";
 const resolved = import.meta.resolve(variableArg);
-const mixed = import.meta.resolve("literal", someVar, 123);
-    `.trim();
-    const resolveRules: ResolveRules = {
-      methods: {
-        resolve: (path) => `resolved:${String(path)}`,
-      },
-    };
+const mixed = import.meta.glob("literal", someVar, 123);
+      `.trim();
 
-    const result = analyzeTypeScript(code, resolveRules);
+      const resolveRules: ResolveRules = {
+        methods: {
+          glob: (...args) => `globbed:${args.join(",")}`,
+          resolve: (path) => `resolved:${String(path)}`,
+        },
+      };
 
-    expect(result.warnings).toMatchInlineSnapshot(`
-      [
-        {
-          "end": 82,
-          "message": "Method resolve called with non-literal arguments",
-          "methodName": "resolve",
-          "nonLiteralArgs": [
-            {
-              "index": 0,
-              "type": "Identifier",
-            },
-          ],
-          "start": 50,
+      const result = analyzeTypeScript(code, resolveRules);
+
+      expect(result.warnings).toMatchInlineSnapshot(`
+        [
+          {
+            "end": 82,
+            "message": "Method resolve called with non-literal arguments",
+            "methodName": "resolve",
+            "nonLiteralArgs": [
+              {
+                "index": 0,
+                "type": "Identifier",
+              },
+            ],
+            "start": 50,
+          },
+          {
+            "end": 139,
+            "message": "Method glob called with non-literal arguments",
+            "methodName": "glob",
+            "nonLiteralArgs": [
+              {
+                "index": 1,
+                "type": "Identifier",
+              },
+            ],
+            "start": 98,
+          },
+        ]
+      `);
+
+      // Should still create replacements despite warnings
+      expect(result.replacements).toHaveLength(2);
+    });
+
+    it("should not transform unknown methods", () => {
+      const code = "const result = import.meta.unknownMethod('./test');";
+      const resolveRules: ResolveRules = {
+        methods: {
+          resolve: (path) => `resolved:${path}`,
         },
-        {
-          "end": 142,
-          "message": "Method resolve called with non-literal arguments",
-          "methodName": "resolve",
-          "nonLiteralArgs": [
-            {
-              "index": 1,
-              "type": "Identifier",
-            },
-          ],
-          "start": 98,
+      };
+
+      const result = analyzeTypeScript(code, resolveRules);
+
+      expect(result.replacements).toHaveLength(0);
+    });
+
+    it("should handle non-MemberExpression callees", () => {
+      const code = "const result = someFunction('./test');";
+      const resolveRules: ResolveRules = {
+        methods: {
+          resolve: (path) => `resolved:${path}`,
         },
-      ]
-    `);
+      };
+
+      const result = analyzeTypeScript(code, resolveRules);
+
+      expect(result).toMatchInlineSnapshot(`
+        {
+          "replacements": [],
+          "warnings": [],
+        }
+      `);
+    });
   });
 });

@@ -7,6 +7,7 @@ import type { LiteralValue, ResolveRules } from "./options";
 import type { CodeReplacement } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
+import { includesImportMeta } from "./index";
 
 interface AnalysisWarning {
   end: number;
@@ -34,6 +35,13 @@ export function analyzeTypeScript(
   code: string,
   resolveRules: ResolveRules,
 ): AnalysisResult {
+  if (!includesImportMeta(code)) {
+    return {
+      replacements: [],
+      warnings: [],
+    };
+  }
+
   const ast = parseProgram(code);
   const transformations: CodeReplacement[] = [];
   const warnings: AnalysisWarning[] = [];
@@ -42,7 +50,7 @@ export function analyzeTypeScript(
     ast,
     {},
     {
-      MemberExpression: (node) => {
+      MemberExpression: (node, c) => {
         if (!isImportMetaExpression(node)) {
           return;
         }
@@ -61,58 +69,62 @@ export function analyzeTypeScript(
             start: node.range[0],
           });
         }
+
+        c.next();
       },
 
-      CallExpression: (node) => {
+      CallExpression: (node, c) => {
+        // Analyze args first.
+        c.next();
+
+        // Handle import.meta.method(...) calls.
+        // This should be after than args to allow like import.meta.method(import.meta.property).
+        // Check all args and abort traversal
         if (
-          !(
-            node.callee.type === AST_NODE_TYPES.MemberExpression &&
-            isImportMetaExpression(node.callee)
-          )
+          node.callee.type === AST_NODE_TYPES.MemberExpression &&
+          isImportMetaExpression(node.callee)
         ) {
-          return;
-        }
+          const methodPath = getAccessPath(node.callee);
+          if (
+            isNonEmptyString(methodPath) &&
+            resolveRules.methods?.[methodPath]
+          ) {
+            const literalArgs: Array<LiteralValue | null> = [];
+            const nonLiteralArgs: Array<{ index: number; type: string }> = [];
 
-        const methodPath = getAccessPath(node.callee);
+            for (const [index, args] of node.arguments.entries()) {
+              if (args.type === AST_NODE_TYPES.Literal) {
+                literalArgs.push(args.value);
+              } else {
+                literalArgs.push(null);
+                nonLiteralArgs.push({ index, type: args.type });
+              }
+            }
 
-        if (
-          isNonEmptyString(methodPath) &&
-          resolveRules.methods?.[methodPath]
-        ) {
-          const literalArgs: Array<LiteralValue | null> = [];
-          const nonLiteralArgs: Array<{ index: number; type: string }> = [];
+            if (nonLiteralArgs.length > 0) {
+              warnings.push({
+                end: node.range[1],
+                message: `Method ${methodPath} called with non-literal arguments`,
+                methodName: methodPath,
+                nonLiteralArgs,
+                start: node.range[0],
+              });
+            }
 
-          for (const [index, args] of node.arguments.entries()) {
-            if (args.type === AST_NODE_TYPES.Literal) {
-              literalArgs.push(args.value);
-            } else {
-              literalArgs.push(null);
-              nonLiteralArgs.push({ index, type: args.type });
+            try {
+              const result = resolveRules.methods[methodPath](...literalArgs);
+              const replacement = JSON.stringify(result);
+
+              transformations.push({
+                end: node.range[1],
+                replacement,
+                start: node.range[0],
+              });
+            } catch (error) {
+              console.warn(`Failed to execute method ${methodPath}:`, error);
             }
           }
-
-          if (nonLiteralArgs.length > 0) {
-            warnings.push({
-              end: node.range[1],
-              message: `Method ${methodPath} called with non-literal arguments`,
-              methodName: methodPath,
-              nonLiteralArgs,
-              start: node.range[0],
-            });
-          }
-
-          try {
-            const result = resolveRules.methods[methodPath](...literalArgs);
-            const replacement = JSON.stringify(result);
-
-            transformations.push({
-              end: node.range[1],
-              replacement,
-              start: node.range[0],
-            });
-          } catch (error) {
-            console.warn(`Failed to execute method ${methodPath}:`, error);
-          }
+          return;
         }
       },
     },
@@ -175,6 +187,7 @@ function parseProgram(code: string): TSESTree.Node {
   const ast = parse(code, {
     comment: true,
     jsDocParsingMode: "none",
+    jsx: true,
     loc: true,
     project: false,
     range: true,
