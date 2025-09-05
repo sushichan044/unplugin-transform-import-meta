@@ -1,6 +1,6 @@
-import type { TSESTree } from "@typescript-eslint/typescript-estree";
+import type { MemberExpression, Node } from "@oxc-project/types";
 
-import { AST_NODE_TYPES, parse } from "@typescript-eslint/typescript-estree";
+import oxc from "oxc-parser";
 import { walk } from "zimmerframe";
 
 import type { ResolveRules } from "./options";
@@ -62,10 +62,12 @@ export function analyzeTypeScript(
             const replacement = serializeLiteralValue(
               resolveRules.properties[accessPath],
             );
+            const [start, end] = getRange(node);
+
             transformations.push({
-              end: node.range[1],
+              end,
               replacement,
-              start: node.range[0],
+              start,
             });
           }
         }
@@ -81,7 +83,7 @@ export function analyzeTypeScript(
         // This should be after than args to allow like import.meta.method(import.meta.property).
         // Check all args and abort traversal
         if (
-          node.callee.type === AST_NODE_TYPES.MemberExpression &&
+          node.callee.type === "MemberExpression" &&
           isImportMetaExpression(node.callee)
         ) {
           const methodPath = getAccessPath(node.callee);
@@ -93,7 +95,7 @@ export function analyzeTypeScript(
             const nonLiteralArgs: Array<{ index: number; type: string }> = [];
 
             for (const [index, args] of node.arguments.entries()) {
-              if (args.type === AST_NODE_TYPES.Literal) {
+              if (args.type === "Literal") {
                 literalArgs.push(args.value);
               } else {
                 literalArgs.push(null);
@@ -101,13 +103,14 @@ export function analyzeTypeScript(
               }
             }
 
+            const [start, end] = getRange(node);
             if (nonLiteralArgs.length > 0) {
               warnings.push({
-                end: node.range[1],
+                end,
                 message: `Method ${methodPath} called with non-literal arguments`,
                 methodName: methodPath,
                 nonLiteralArgs,
-                start: node.range[0],
+                start,
               });
             }
 
@@ -116,9 +119,9 @@ export function analyzeTypeScript(
               const replacement = serializeLiteralValue(result);
 
               transformations.push({
-                end: node.range[1],
+                end,
                 replacement,
-                start: node.range[0],
+                start,
               });
             } catch (error) {
               console.warn(`Failed to execute method ${methodPath}:`, error);
@@ -141,12 +144,12 @@ export function analyzeTypeScript(
  * @param node - The node to check.
  * @returns True if the node is an import meta expression, false otherwise.
  */
-function isImportMetaExpression(node: TSESTree.MemberExpression): boolean {
+function isImportMetaExpression(node: MemberExpression): boolean {
   const path = findImportMetaPath(node);
   return path.length > 0;
 }
 
-function getAccessPath(node: TSESTree.MemberExpression): string | null {
+function getAccessPath(node: MemberExpression): string | null {
   const path = findImportMetaPath(node);
   return path.length > 0 ? path.join(".") : null;
 }
@@ -156,24 +159,24 @@ function getAccessPath(node: TSESTree.MemberExpression): string | null {
  * @param node - The node to find the import meta path from.
  * @returns The import meta path.
  */
-function findImportMetaPath(node: TSESTree.MemberExpression): string[] {
+function findImportMetaPath(node: MemberExpression): string[] {
   const path: string[] = [];
   let current = node;
 
-  while (current.type === AST_NODE_TYPES.MemberExpression) {
-    if (current.property.type === AST_NODE_TYPES.Identifier) {
+  while (current.type === "MemberExpression") {
+    if (current.property.type === "Identifier") {
       path.unshift(current.property.name);
     }
 
     if (
-      current.object.type === AST_NODE_TYPES.MetaProperty &&
+      current.object.type === "MetaProperty" &&
       current.object.meta.name === "import" &&
       current.object.property.name === "meta"
     ) {
       return path;
     }
 
-    if (current.object.type === AST_NODE_TYPES.MemberExpression) {
+    if (current.object.type === "MemberExpression") {
       current = current.object;
     } else {
       break;
@@ -183,18 +186,23 @@ function findImportMetaPath(node: TSESTree.MemberExpression): string[] {
   return [];
 }
 
-function parseProgram(code: string): TSESTree.Node {
-  const ast = parse(code, {
-    comment: true,
-    jsDocParsingMode: "none",
-    jsx: true,
-    loc: true,
-    project: false,
+function parseProgram(code: string): Node {
+  const ast = oxc.parseSync("file.tsx", code, {
+    astType: "ts",
+    lang: "tsx",
+    preserveParens: true,
     range: true,
     sourceType: "module",
-    suppressDeprecatedPropertyWarnings: true,
-    tokens: false,
   });
 
-  return ast;
+  return ast.program;
+}
+
+function getRange(node: Node): [number, number] {
+  if (!node.range) {
+    throw new Error(
+      `Node does not have range: ${JSON.stringify(node)}. Did you forget to pass range: true to the oxc parser?`,
+    );
+  }
+  return node.range;
 }
