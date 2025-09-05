@@ -16,12 +16,13 @@ export function applyReplacements(
 }
 
 export function serializeLiteralValue(value: LiteralValue): string {
-  if (value == null) {
-    return "null";
-  }
-
   if (value instanceof RegExp) {
     return value.toString();
+  }
+
+  if (typeof value === "bigint") {
+    // The trailing "n" is not part of the string.
+    return value.toString() + "n";
   }
 
   return JSON.stringify(value);
