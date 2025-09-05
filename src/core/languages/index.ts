@@ -4,9 +4,8 @@ import type { LanguageProcessor } from "./types";
 
 import { createAstroProcessor } from "./astro";
 import { createECMAScriptProcessor } from "./ecmascript";
-import { createVueProcessor } from "./vue";
 
-type SupportedLanguage = "astro" | "ecma" | "vue";
+type SupportedLanguage = "astro" | "ecma";
 
 export async function createProcessor(
   lang: SupportedLanguage,
@@ -17,9 +16,6 @@ export async function createProcessor(
     }
     case "ecma": {
       return createECMAScriptProcessor();
-    }
-    case "vue": {
-      return await createVueProcessor();
     }
 
     default: {
@@ -49,10 +45,6 @@ export function detectLanguage(filename: string): SupportedLanguage | null {
 
   if (cleanExt === "astro") {
     return "astro";
-  }
-
-  if (cleanExt === "vue") {
-    return "vue";
   }
 
   return null;

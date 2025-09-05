@@ -9,40 +9,39 @@ import { walk } from "zimmerframe";
 
 import type { ResolveRules } from "../options";
 import type { CodeReplacement } from "../types";
-import type { LanguageProcessor, TransformResult } from "./types";
+import type { LanguageProcessor } from "./types";
 
 import { tryImport } from "../../utils/import";
 import { analyzeTypeScript } from "../analyze";
 import { includesImportMeta } from "../index";
 
 export async function createAstroProcessor(): Promise<LanguageProcessor> {
-  const astroMod =
+  const astro =
     // eslint-disable-next-line @typescript-eslint/consistent-type-imports
     await tryImport<typeof import("@astrojs/compiler")>("@astrojs/compiler");
 
-  const astroUtilMod = await tryImport<
+  const astroUtil = await tryImport<
     // eslint-disable-next-line @typescript-eslint/consistent-type-imports
     typeof import("@astrojs/compiler/utils")
   >("@astrojs/compiler/utils");
 
-  if (astroMod == null || astroUtilMod == null) {
+  if (astro == null || astroUtil == null) {
     throw new Error(
       "Failed to import @astrojs/compiler. Please install it to process .astro files.",
     );
   }
 
   return {
-    async transform(
-      code: string,
-      id: string,
-      resolveRules: ResolveRules,
-    ): Promise<TransformResult> {
-      const parseResult = await astroMod.parse(code, {
+    async transform(c, code, resolveRules) {
+      if (!includesImportMeta(code)) {
+        return null;
+      }
+
+      const parseResult = await astro.parse(code, {
         position: true,
       });
 
       const allReplacements: CodeReplacement[] = [];
-      const warnings: string[] = [];
 
       walk<AstroNode, Record<string, never>>(
         parseResult.ast,
@@ -103,7 +102,7 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
 
           expression: (node) => {
             // serialize the expression to a block statement to parse whole expression
-            const blockStmt = astroUtilMod.serialize(node);
+            const blockStmt = astroUtil.serialize(node);
             const result = analyzeTypeScript(blockStmt, resolveRules);
 
             const s = node.position?.start?.offset ?? 0;
@@ -121,9 +120,10 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
         },
       );
 
+      const transformed = c.helpers.applyReplacements(code, allReplacements);
+
       return {
-        replacements: allReplacements,
-        warnings,
+        code: transformed,
       };
     },
   };

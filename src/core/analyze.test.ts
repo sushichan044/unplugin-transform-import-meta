@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ResolveRules } from "./options";
 
 import { analyzeTypeScript } from "./analyze";
-import { applyReplacements } from "./apply";
+import { applyReplacements } from "./utils";
 
 describe("analyzeTypeScript", () => {
   describe("no-op", () => {

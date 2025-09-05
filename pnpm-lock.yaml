@@ -4,11 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  zimmerframe:
-    hash: 2763ca91b6acad75be324098766127eb621e5042394922e9d58c1c3074956eab
-    path: patches/zimmerframe.patch
-
 importers:
 
   .:
@@ -33,7 +28,7 @@ importers:
         version: 0.3.0
       zimmerframe:
         specifier: ^1.1.2
-        version: 1.1.2(patch_hash=2763ca91b6acad75be324098766127eb621e5042394922e9d58c1c3074956eab)
+        version: 1.1.2
     devDependencies:
       '@arethetypeswrong/core':
         specifier: 0.18.2
@@ -7395,7 +7390,7 @@ snapshots:
 
   yoctocolors@2.1.2: {}
 
-  zimmerframe@1.1.2(patch_hash=2763ca91b6acad75be324098766127eb621e5042394922e9d58c1c3074956eab): {}
+  zimmerframe@1.1.2: {}
 
   zod-package-json@1.2.0:
     dependencies:

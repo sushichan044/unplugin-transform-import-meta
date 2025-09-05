@@ -3,3 +3,5 @@ export interface CodeReplacement {
   replacement: string;
   start: number;
 }
+
+export type LiteralValue = bigint | boolean | number | string | RegExp | null;

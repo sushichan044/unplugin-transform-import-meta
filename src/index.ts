@@ -5,9 +5,9 @@ import { createUnplugin } from "unplugin";
 import type { Options } from "./core/options";
 import type { Writeable } from "./utils/types";
 
-import { applyReplacements } from "./core/apply";
+import { createProcessor, detectLanguage } from "./core/languages";
+import { createTransformContext } from "./core/languages/context";
 import { resolveOptions } from "./core/options";
-import { createProcessor, detectLanguage } from "./core/processors";
 
 export type { Options, ResolveRules } from "./core/options";
 
@@ -35,7 +35,10 @@ export const unpluginTransformImportMeta: UnpluginInstance<
         },
       },
       async handler(this, code, id) {
-        if (Object.keys(options.resolveRules).length === 0) {
+        if (Object.keys(options.resolveRules?.methods ?? {}).length === 0) {
+          return;
+        }
+        if (Object.keys(options.resolveRules?.properties ?? {}).length === 0) {
           return;
         }
 
@@ -44,23 +47,18 @@ export const unpluginTransformImportMeta: UnpluginInstance<
           return;
         }
 
+        const c = createTransformContext(
+          {
+            error: this.error.bind(this),
+            warn: this.warn.bind(this),
+          },
+          id,
+        );
+
         try {
           const processor = await createProcessor(lang);
-          const transformResult = await processor.transform(
-            code,
-            id,
-            options.resolveRules,
-          );
 
-          for (const warning of transformResult.warnings) {
-            this.warn(warning);
-          }
-
-          if (transformResult.replacements.length === 0) {
-            return code;
-          }
-
-          return applyReplacements(code, transformResult.replacements);
+          return await processor.transform(c, code, options.resolveRules);
         } catch (error) {
           console.warn(`Failed to transform import.meta in code:`, error);
           return code;

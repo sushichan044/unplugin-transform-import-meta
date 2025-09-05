@@ -4,12 +4,12 @@ import oxc from "oxc-parser";
 import { walk } from "zimmerframe";
 
 import type { ResolveRules } from "./options";
-import type { LiteralValue } from "./serialize";
+import type { LiteralValue } from "./types";
 import type { CodeReplacement } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
 import { includesImportMeta } from "./index";
-import { serializeLiteralValue } from "./serialize";
+import { serializeLiteralValue } from "./utils";
 
 interface AnalysisWarning {
   end: number;

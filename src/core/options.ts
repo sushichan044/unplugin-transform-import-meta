@@ -1,6 +1,6 @@
 import type { FilterPattern } from "unplugin-utils";
 
-import type { LiteralValue } from "./serialize";
+import type { LiteralValue } from "./types";
 
 export type MethodFunction = (...args: LiteralValue[]) => LiteralValue;
 

@@ -1,6 +1,6 @@
 import MagicString from "magic-string";
 
-import type { CodeReplacement } from "./types";
+import type { CodeReplacement, LiteralValue } from "./types";
 
 export function applyReplacements(
   source: string,
@@ -13,4 +13,16 @@ export function applyReplacements(
   }
 
   return magicString.toString();
+}
+
+export function serializeLiteralValue(value: LiteralValue): string {
+  if (value == null) {
+    return "null";
+  }
+
+  if (value instanceof RegExp) {
+    return value.toString();
+  }
+
+  return JSON.stringify(value);
 }
