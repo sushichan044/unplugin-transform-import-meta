@@ -86,8 +86,7 @@ export function analyzeTypeScript(
           return;
         }
 
-        const replacement = serializeLiteralValue(bindings.values[accessPath]);
-
+        const replacement = serializeLiteralValue(value);
         replacements.push({
           end,
           replacement,
