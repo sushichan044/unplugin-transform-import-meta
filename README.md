@@ -203,9 +203,10 @@ const plugin = TransformImportMeta({
   exclude: [/node_modules/],
   bindings: {
     values: {
-      // key can be nested via dot-path
       APP_NAME: 'my-app',
       APP_ENV: 'production',
+      // key can be nested via dot-path
+      "flags.FOO_RELEASED": true,
     },
     functions: {
       // args must be literals; non-literals are passed as null
@@ -253,7 +254,7 @@ Rename your property/method to a non-reserved name.
 
 ## License
 
-[MIT](./LICENSE) License © 2025-PRESENT [Kevin Deng](https://github.com/sushichan044)
+[MIT](./LICENSE) License © 2025-PRESENT [sushichan044](https://github.com/sushichan044)
 
 <!-- Badges -->
 
