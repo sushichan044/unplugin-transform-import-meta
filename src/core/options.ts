@@ -5,20 +5,25 @@ import type { LiteralValue } from "./types";
 export type MethodFunction = (...args: LiteralValue[]) => LiteralValue;
 
 export interface ResolveRules {
-  methods?: Record<string, MethodFunction>;
-  properties?: Record<string, LiteralValue>;
+  methods: Record<string, MethodFunction>;
+  properties: Record<string, LiteralValue>;
 }
 
 export interface Options {
   enforce?: "post" | "pre" | undefined;
   exclude?: FilterPattern;
   include?: FilterPattern;
-  resolveRules?: ResolveRules;
+  resolveRules?: Partial<ResolveRules>;
 }
 
 type Overwrite<T, U> = Pick<T, Exclude<keyof T, keyof U>> & U;
 
-type OptionsResolved = Overwrite<Required<Options>, Pick<Options, "enforce">>;
+type OptionsResolved = Overwrite<
+  Overwrite<Required<Options>, Pick<Options, "enforce">>,
+  {
+    resolveRules: ResolveRules;
+  }
+>;
 
 export function resolveOptions(options: Options): OptionsResolved {
   return {
@@ -30,6 +35,9 @@ export function resolveOptions(options: Options): OptionsResolved {
       /\.astro$/,
       /\.svelte$/,
     ],
-    resolveRules: options.resolveRules ?? {},
+    resolveRules: {
+      methods: options.resolveRules?.methods ?? {},
+      properties: options.resolveRules?.properties ?? {},
+    },
   };
 }
