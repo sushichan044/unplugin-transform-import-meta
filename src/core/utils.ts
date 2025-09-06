@@ -49,7 +49,7 @@ export function isLiteralValue(value: unknown): value is LiteralValue {
     value === null ||
     typeof value === "boolean" ||
     typeof value === "string" ||
-    typeof value === "number" ||
+    (typeof value === "number" && Number.isFinite(value)) ||
     value instanceof RegExp ||
     typeof value === "bigint"
   );

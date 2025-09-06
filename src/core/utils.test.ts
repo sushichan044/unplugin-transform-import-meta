@@ -99,8 +99,17 @@ describe("serializeLiteralValue", () => {
   });
 
   describe("error cases", () => {
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    const tc = [undefined, {}, [], () => {}, Symbol("symbol")];
+    const tc = [
+      undefined,
+      {},
+      [],
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      () => {},
+      Symbol("symbol"),
+      NaN,
+      Infinity,
+      -Infinity,
+    ];
 
     it.each(tc)("should throw TypeError when value is %s", (value) => {
       expect(() =>
