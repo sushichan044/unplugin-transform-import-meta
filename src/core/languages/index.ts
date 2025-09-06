@@ -37,26 +37,29 @@ export function detectLanguage(filename: string): SupportedLanguage | null {
     return null;
   }
 
-  const cleanExt = getCleanExt(filename);
+  const cleanExt = cleanExtName(filename);
 
   if (REGEX_ECMA_LIKE.test(cleanExt)) {
     return "ecma";
   }
 
-  if (cleanExt === "astro") {
+  // Not using regex for performance
+  if (cleanExt === ".astro") {
     return "astro";
   }
 
   return null;
 }
 
-function getCleanExt(path: string): string {
-  return extname(path).replace(/^\./, "").replace(/\?.*$/, "");
-}
+export const REGEX_ECMA_LIKE = /\.[cm]?[jt]sx?$/;
+export const REGEX_ASTRO_LIKE = /\.astro$/;
 
 function isDtsLike(path: string): boolean {
   return REGEX_DTS_LIKE.test(path);
 }
 
 const REGEX_DTS_LIKE = /\.d\.[cm]?ts(\?.*)?$/;
-const REGEX_ECMA_LIKE = /[cm]?[jt]sx?$/;
+
+function cleanExtName(path: string): string {
+  return extname(path).replace(/\?.*$/, "");
+}

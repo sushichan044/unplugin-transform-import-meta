@@ -1,6 +1,9 @@
 import type { FilterPattern } from "unplugin-utils";
 
+import type { NonReadOnly } from "../utils/types";
 import type { LiteralValue } from "./types";
+
+import { REGEX_ASTRO_LIKE, REGEX_ECMA_LIKE } from "./languages";
 
 export type MethodFunction = (...args: LiteralValue[]) => LiteralValue;
 
@@ -16,24 +19,22 @@ export interface Options {
   resolveRules?: Partial<ResolveRules>;
 }
 
-type Overwrite<T, U> = Pick<T, Exclude<keyof T, keyof U>> & U;
-
-type OptionsResolved = Overwrite<
-  Overwrite<Required<Options>, Pick<Options, "enforce">>,
-  {
-    resolveRules: ResolveRules;
-  }
->;
+export interface OptionsResolved {
+  enforce?: "post" | "pre";
+  exclude?: NonReadOnly<FilterPattern>;
+  include?: NonReadOnly<FilterPattern>;
+  resolveRules: ResolveRules;
+}
 
 export function resolveOptions(options: Options): OptionsResolved {
   return {
     enforce: "enforce" in options ? options.enforce : "pre",
-    exclude: options.exclude ?? [/node_modules/],
-    include: options.include ?? [
-      /\.[cm]?[jt]sx?$/,
-      /\.vue$/,
-      /\.astro$/,
-      /\.svelte$/,
+    exclude: (options.exclude as NonReadOnly<FilterPattern>) ?? [
+      /node_modules/,
+    ],
+    include: (options.include as NonReadOnly<FilterPattern>) ?? [
+      REGEX_ECMA_LIKE,
+      REGEX_ASTRO_LIKE,
     ],
     resolveRules: {
       methods: options.resolveRules?.methods ?? {},

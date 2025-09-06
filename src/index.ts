@@ -3,7 +3,6 @@ import type { UnpluginInstance } from "unplugin";
 import { createUnplugin } from "unplugin";
 
 import type { Options } from "./core/options";
-import type { Writeable } from "./utils/types";
 
 import { createProcessor, detectLanguage } from "./core/languages";
 import { createTransformContext } from "./core/languages/context";
@@ -33,10 +32,8 @@ export const unpluginTransformImportMeta: UnpluginInstance<
           include: "import.meta",
         },
         id: {
-          exclude:
-            (options.exclude as Writeable<typeof options.exclude>) ?? undefined,
-          include:
-            (options.include as Writeable<typeof options.include>) ?? undefined,
+          exclude: options.exclude ?? undefined,
+          include: options.include ?? undefined,
         },
       },
       async handler(this, code, id) {
