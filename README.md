@@ -48,18 +48,20 @@ npm i -D unplugin-transform-import-meta
 Define how `import.meta` should be resolved via `bindings` (the `ImportMetaBindings` shape).
 
 ```ts
-import type { ImportMetaBindings } from "unplugin-transform-import-meta"
+import type { Options } from "unplugin-transform-import-meta"
 
 // shared bindings (TypeScript for clarity)
-const bindings: ImportMetaBindings = {
-  values: {
-    APP_NAME: "my-app",
-    APP_ENV: "production",
-    FEATURE_FLAG: true,
-  },
-  functions: {
-    version: (v) => `v${v}`,
-    asset: (path) => `/static/${path}`,
+const options: Options = {
+  bindings: {
+    values: {
+      APP_NAME: "my-app",
+      APP_ENV: "production",
+      FEATURE_FLAG: true,
+    },
+    functions: {
+      version: (v) => `v${v}`,
+      asset: (path) => `/static/${path}`,
+    },
   },
 };
 ```
@@ -74,7 +76,7 @@ import TransformImportMeta from 'unplugin-transform-import-meta/vite'
 
 export default defineConfig({
   plugins: [
-    TransformImportMeta({ bindings }),
+    TransformImportMeta(options),
   ],
 })
 ```
@@ -89,7 +91,7 @@ export default defineConfig({
 import TransformImportMeta from 'unplugin-transform-import-meta/rollup'
 
 export default {
-  plugins: [TransformImportMeta({ bindings })],
+  plugins: [TransformImportMeta(options)],
 }
 ```
 
@@ -103,7 +105,7 @@ export default {
 import TransformImportMeta from 'unplugin-transform-import-meta/rolldown'
 
 export default {
-  plugins: [TransformImportMeta({ bindings })],
+  plugins: [TransformImportMeta(options)],
 }
 ```
 
@@ -117,7 +119,7 @@ export default {
 import TransformImportMeta from 'unplugin-transform-import-meta/webpack'
 
 export default {
-  plugins: [TransformImportMeta({ bindings })],
+  plugins: [TransformImportMeta(options)],
 }
 ```
 
@@ -131,7 +133,7 @@ export default {
 import TransformImportMeta from 'unplugin-transform-import-meta/rspack'
 
 export default {
-  plugins: [TransformImportMeta({ bindings })],
+  plugins: [TransformImportMeta(options)],
 }
 ```
 
@@ -145,7 +147,7 @@ import { build } from 'esbuild'
 import TransformImportMeta from 'unplugin-transform-import-meta/esbuild'
 
 await build({
-  plugins: [TransformImportMeta({ bindings })],
+  plugins: [TransformImportMeta(options)],
 })
 ```
 
@@ -159,7 +161,7 @@ await build({
 import TransformImportMeta from 'unplugin-transform-import-meta/farm'
 
 export default {
-  plugins: [TransformImportMeta({ bindings })],
+  plugins: [TransformImportMeta(options)],
 }
 ```
 
