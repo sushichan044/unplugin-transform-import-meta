@@ -61,7 +61,7 @@ export const TransformImportMeta: UnpluginInstance<Options | undefined, false> =
           );
 
           try {
-            const processor = await createProcessor(lang);
+            const processor = createProcessor(lang);
 
             return await processor.transform(c, code, options.bindings);
           } catch (error) {

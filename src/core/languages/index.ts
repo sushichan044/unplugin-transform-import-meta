@@ -2,21 +2,15 @@ import { extname } from "pathe";
 
 import type { LanguageProcessor } from "./types";
 
-import { createAstroProcessor } from "./astro";
 import { createECMAScriptProcessor } from "./ecmascript";
 
-type SupportedLanguage = "astro" | "ecma";
+type SupportedLanguage = "ecma";
 
 /**
  * @package
  */
-export async function createProcessor(
-  lang: SupportedLanguage,
-): Promise<LanguageProcessor> {
+export function createProcessor(lang: SupportedLanguage): LanguageProcessor {
   switch (lang) {
-    case "astro": {
-      return await createAstroProcessor();
-    }
     case "ecma": {
       return createECMAScriptProcessor();
     }
@@ -46,11 +40,6 @@ export function detectLanguage(filename: string): SupportedLanguage | null {
 
   if (REGEX_ECMA_LIKE.test(cleanExt)) {
     return "ecma";
-  }
-
-  // Not using regex for performance
-  if (cleanExt === ".astro") {
-    return "astro";
   }
 
   return null;

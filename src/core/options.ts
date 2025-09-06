@@ -35,7 +35,7 @@ export function resolveOptions(options: Options): OptionsResolved {
       functions: options.bindings?.functions ?? {},
       values: options.bindings?.values ?? {},
     },
-    enforce: "enforce" in options ? options.enforce : "pre",
+    enforce: "enforce" in options ? options.enforce : "post",
     exclude: (options.exclude as NonReadOnly<FilterPattern>) ?? [
       /node_modules/,
     ],
