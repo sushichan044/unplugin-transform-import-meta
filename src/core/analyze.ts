@@ -79,7 +79,7 @@ export function analyzeTypeScript(
             message: `Value for import.meta.${accessPath} is not a valid literal`,
             meta: {
               accessPath,
-              value,
+              valueType: typeof value,
             },
             start,
           });
@@ -117,18 +117,18 @@ export function analyzeTypeScript(
         }
 
         const literalArgs: Array<LiteralValue | null> = [];
-        for (const [index, args] of node.arguments.entries()) {
-          if (args.type === "Literal") {
-            literalArgs.push(args.value);
+        for (const [index, arg] of node.arguments.entries()) {
+          if (arg.type === "Literal") {
+            literalArgs.push(arg.value);
           } else {
             literalArgs.push(null);
-            const [argStart, argEnd] = getRange(args);
+            const [argStart, argEnd] = getRange(arg);
             errors.push({
               end: argEnd,
               message: `Argument at index ${index} of method import.meta.${methodPath}() is not a literal`,
               meta: {
                 argumentIndex: index,
-                argumentType: args.type,
+                argumentType: arg.type,
               },
               start: argStart,
             });
@@ -160,10 +160,17 @@ export function analyzeTypeScript(
             start: callStart,
           });
         } catch (error) {
-          console.warn(
-            `Failed to execute method import.meta.${methodPath}():`,
-            error,
-          );
+          errors.push({
+            end: callEnd,
+            message: `Failed to execute method import.meta.${methodPath}(): ${String(
+              error,
+            )}`,
+            meta: {
+              method: methodPath,
+            },
+            start: callStart,
+          });
+          return;
         }
       },
     },
