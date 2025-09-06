@@ -4,7 +4,7 @@
  * @module
  */
 
-import { unpluginTransformImportMeta } from "./index";
+import { TransformImportMeta } from "./index";
 
 /**
  * Rolldown plugin
@@ -12,14 +12,14 @@ import { unpluginTransformImportMeta } from "./index";
  * @example
  * ```ts
  * // rolldown.config.js
- * import Starter from 'unplugin-transform-import-meta/rolldown'
+ * import TransformImportMeta from 'unplugin-transform-import-meta/rolldown'
  *
  * export default {
- *   plugins: [Starter()],
+ *   plugins: [TransformImportMeta()],
  * }
  * ```
  */
 const rolldown =
-  unpluginTransformImportMeta.rolldown as typeof unpluginTransformImportMeta.rolldown;
+  TransformImportMeta.rolldown as typeof TransformImportMeta.rolldown;
 export default rolldown;
 export { rolldown as "module.exports" };

@@ -4,7 +4,7 @@
  * @module
  */
 
-import { unpluginTransformImportMeta } from "./index";
+import { TransformImportMeta } from "./index";
 
 /**
  * Rollup plugin
@@ -12,14 +12,13 @@ import { unpluginTransformImportMeta } from "./index";
  * @example
  * ```ts
  * // rollup.config.js
- * import unpluginResolveImportMeta from 'unplugin-transform-import-meta/rollup'
+ * import TransformImportMeta from 'unplugin-transform-import-meta/rollup'
  *
  * export default {
- *   plugins: [unpluginResolveImportMeta()],
+ *   plugins: [TransformImportMeta()],
  * }
  * ```
  */
-const rollup =
-  unpluginTransformImportMeta.rollup as typeof unpluginTransformImportMeta.rollup;
+const rollup = TransformImportMeta.rollup as typeof TransformImportMeta.rollup;
 export default rollup;
 export { rollup as "module.exports" };

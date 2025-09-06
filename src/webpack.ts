@@ -4,7 +4,7 @@
  * @module
  */
 
-import { unpluginTransformImportMeta } from "./index";
+import { TransformImportMeta } from "./index";
 
 /**
  * Webpack plugin
@@ -12,14 +12,14 @@ import { unpluginTransformImportMeta } from "./index";
  * @example
  * ```js
  * // webpack.config.js
- * import Starter from 'unplugin-transform-import-meta/webpack'
+ * import TransformImportMeta from 'unplugin-transform-import-meta/webpack'
  *
- * default export {
- *  plugins: [Starter()],
+ * export default {
+ *  plugins: [TransformImportMeta()],
  * }
  * ```
  */
 const webpack =
-  unpluginTransformImportMeta.webpack as typeof unpluginTransformImportMeta.webpack;
+  TransformImportMeta.webpack as typeof TransformImportMeta.webpack;
 export default webpack;
 export { webpack as "module.exports" };

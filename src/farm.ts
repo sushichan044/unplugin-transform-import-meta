@@ -4,7 +4,7 @@
  * @module
  */
 
-import { unpluginTransformImportMeta } from "./index";
+import { TransformImportMeta } from "./index";
 
 /**
  * Farm plugin
@@ -12,14 +12,13 @@ import { unpluginTransformImportMeta } from "./index";
  * @example
  * ```ts
  * // farm.config.js
- * import Starter from 'unplugin-transform-import-meta/farm'
+ * import TransformImportMeta from 'unplugin-transform-import-meta/farm'
  *
  * export default {
- *   plugins: [Starter()],
+ *   plugins: [TransformImportMeta()],
  * }
  * ```
  */
-const farm =
-  unpluginTransformImportMeta.farm as typeof unpluginTransformImportMeta.farm;
+const farm = TransformImportMeta.farm as typeof TransformImportMeta.farm;
 export default farm;
 export { farm as "module.exports" };
