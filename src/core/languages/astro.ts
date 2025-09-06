@@ -1,14 +1,10 @@
-import type {
-  Node as AstroNode,
-  ComponentNode,
-  CustomElementNode,
-  ElementNode,
-} from "@astrojs/compiler/types";
+import type { Node, TagLikeNode } from "@astrojs/compiler/types";
 
 import { walk } from "zimmerframe";
 
 import type { ResolveRules } from "../options";
-import type { CodeReplacement } from "../types";
+import type { TextReplacement } from "../types";
+import type { TransformerLogger } from "./context";
 import type { LanguageProcessor } from "./types";
 
 import { tryImport } from "../../utils/import";
@@ -32,7 +28,7 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
   }
 
   return {
-    async transform(c, code, resolveRules) {
+    async transform(unCtx, code, resolveRules) {
       if (!includesImportMeta(code)) {
         return null;
       }
@@ -41,9 +37,9 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
         position: true,
       });
 
-      const allReplacements: CodeReplacement[] = [];
+      const allReplacements: TextReplacement[] = [];
 
-      walk<AstroNode, Record<string, never>>(
+      walk<Node, Record<string, never>>(
         parseResult.ast,
         {},
         {
@@ -67,17 +63,30 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
           },
 
           element: (node, c) => {
-            allReplacements.push(...handleTagNode(node, resolveRules));
+            allReplacements.push(
+              ...handleTagNode(unCtx.logger, node, resolveRules),
+            );
+            c.next();
+          },
+
+          fragment: (node, c) => {
+            allReplacements.push(
+              ...handleTagNode(unCtx.logger, node, resolveRules),
+            );
             c.next();
           },
 
           component: (node, c) => {
-            allReplacements.push(...handleTagNode(node, resolveRules));
+            allReplacements.push(
+              ...handleTagNode(unCtx.logger, node, resolveRules),
+            );
             c.next();
           },
 
           "custom-element": (node, c) => {
-            allReplacements.push(...handleTagNode(node, resolveRules));
+            allReplacements.push(
+              ...handleTagNode(unCtx.logger, node, resolveRules),
+            );
             c.next();
           },
 
@@ -120,7 +129,10 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
         },
       );
 
-      const transformed = c.helpers.applyReplacements(code, allReplacements);
+      const transformed = unCtx.helpers.applyReplacements(
+        code,
+        allReplacements,
+      );
 
       return {
         code: transformed,
@@ -130,13 +142,25 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
 }
 
 function handleTagNode(
-  node: ComponentNode | CustomElementNode | ElementNode,
+  logger: TransformerLogger,
+  node: TagLikeNode,
   resolveRules: ResolveRules,
-): CodeReplacement[] {
-  const allReplacements: CodeReplacement[] = [];
+): TextReplacement[] {
+  const allReplacements: TextReplacement[] = [];
 
   for (const attr of node.attributes) {
-    if (attr.kind === "empty" || attr.kind === "quoted") {
+    if (
+      attr.kind === "empty" || // skip boolean attributes
+      attr.kind === "quoted" // skip string literal attributes
+    ) {
+      continue;
+    }
+
+    if (attr.kind === "shorthand" || attr.kind === "spread") {
+      // TODO: contribution is welcome
+      logger.warn(
+        `<${node.name}>: Skipping unsupported attribute syntax: ${attr.kind} for "${attr.name}"`,
+      );
       continue;
     }
 
