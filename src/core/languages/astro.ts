@@ -4,7 +4,7 @@ import { walk } from "zimmerframe";
 
 import type { ResolveRules } from "../types";
 import type { TextReplacement } from "../types";
-import type { TransformerLogger } from "./context";
+import type { TransformerContext } from "./context";
 import type { LanguageProcessor } from "./types";
 
 import { tryImport } from "../../utils/import";
@@ -60,32 +60,43 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
               }),
             );
             allReplacements.push(...adjustedReplacements);
+
+            // log warnings with adjusted offsets
+            if (result.errors.length > 0) {
+              for (const err of result.errors) {
+                unCtx.logger.error({
+                  id: unCtx.id,
+                  message: err.message,
+                  meta: err.meta,
+                });
+              }
+            }
           },
 
           element: (node, c) => {
             allReplacements.push(
-              ...handleTagNode(unCtx.logger, node, resolveRules),
+              ...handleTagNode(unCtx, code, node, resolveRules),
             );
             c.next();
           },
 
           fragment: (node, c) => {
             allReplacements.push(
-              ...handleTagNode(unCtx.logger, node, resolveRules),
+              ...handleTagNode(unCtx, code, node, resolveRules),
             );
             c.next();
           },
 
           component: (node, c) => {
             allReplacements.push(
-              ...handleTagNode(unCtx.logger, node, resolveRules),
+              ...handleTagNode(unCtx, code, node, resolveRules),
             );
             c.next();
           },
 
           "custom-element": (node, c) => {
             allReplacements.push(
-              ...handleTagNode(unCtx.logger, node, resolveRules),
+              ...handleTagNode(unCtx, code, node, resolveRules),
             );
             c.next();
           },
@@ -106,6 +117,16 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
                 }),
               );
               allReplacements.push(...adjustedReplacements);
+
+              if (result.errors.length > 0) {
+                for (const err of result.errors) {
+                  unCtx.logger.error({
+                    id: unCtx.id,
+                    message: err.message,
+                    meta: err.meta,
+                  });
+                }
+              }
             }
           },
 
@@ -125,6 +146,16 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
               }),
             );
             allReplacements.push(...adjustedReplacements);
+
+            if (result.errors.length > 0) {
+              for (const err of result.errors) {
+                unCtx.logger.error({
+                  id: unCtx.id,
+                  message: err.message,
+                  meta: err.meta,
+                });
+              }
+            }
           },
         },
       );
@@ -142,7 +173,8 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
 }
 
 function handleTagNode(
-  logger: TransformerLogger,
+  ctx: TransformerContext,
+  code: string,
   node: TagLikeNode,
   resolveRules: ResolveRules,
 ): TextReplacement[] {
@@ -158,7 +190,7 @@ function handleTagNode(
 
     if (attr.kind === "shorthand" || attr.kind === "spread") {
       // TODO: contribution is welcome
-      logger.warn(
+      ctx.logger.warn(
         `<${node.name}>: Skipping unsupported attribute syntax: ${attr.kind} for "${attr.name}"`,
       );
       continue;
@@ -175,6 +207,16 @@ function handleTagNode(
         start: replacement.start + offset,
       }));
       allReplacements.push(...adjustedReplacements);
+
+      if (result.errors.length > 0) {
+        for (const err of result.errors) {
+          ctx.logger.error({
+            id: ctx.id,
+            message: err.message,
+            meta: err.meta,
+          });
+        }
+      }
     }
   }
 

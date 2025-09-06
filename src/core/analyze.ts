@@ -10,20 +10,16 @@ import { isNonEmptyString } from "../utils/string";
 import { includesImportMeta } from "./index";
 import { serializeLiteralValue } from "./utils";
 
-interface AnalysisWarning {
+interface AnalysisError {
   end: number;
   message: string;
-  methodName: string;
-  nonLiteralArgs: Array<{
-    index: number;
-    type: string;
-  }>;
+  meta?: Record<string, unknown>;
   start: number;
 }
 
 interface AnalysisResult {
+  errors: AnalysisError[];
   replacements: TextReplacement[];
-  warnings: AnalysisWarning[];
 }
 
 /**
@@ -38,14 +34,14 @@ export function analyzeTypeScript(
 ): AnalysisResult {
   if (!includesImportMeta(code)) {
     return {
+      errors: [],
       replacements: [],
-      warnings: [],
     };
   }
 
   const ast = parseProgram(code);
-  const transformations: TextReplacement[] = [];
-  const warnings: AnalysisWarning[] = [];
+  const replacements: TextReplacement[] = [];
+  const errors: AnalysisError[] = [];
 
   walk(
     ast,
@@ -63,7 +59,7 @@ export function analyzeTypeScript(
             );
             const [start, end] = getRange(node);
 
-            transformations.push({
+            replacements.push({
               end,
               replacement,
               start,
@@ -104,11 +100,13 @@ export function analyzeTypeScript(
 
             const [start, end] = getRange(node);
             if (nonLiteralArgs.length > 0) {
-              warnings.push({
+              errors.push({
                 end,
                 message: `Method ${methodPath} called with non-literal arguments`,
-                methodName: methodPath,
-                nonLiteralArgs,
+                meta: {
+                  method: methodPath,
+                  nonLiteralArgs,
+                },
                 start,
               });
             }
@@ -117,7 +115,7 @@ export function analyzeTypeScript(
               const result = resolveRules.methods[methodPath](...literalArgs);
               const replacement = serializeLiteralValue(result);
 
-              transformations.push({
+              replacements.push({
                 end,
                 replacement,
                 start,
@@ -133,8 +131,8 @@ export function analyzeTypeScript(
   );
 
   return {
-    replacements: transformations,
-    warnings,
+    errors,
+    replacements,
   };
 }
 

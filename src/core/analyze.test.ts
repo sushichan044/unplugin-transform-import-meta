@@ -152,30 +152,34 @@ const mixed = import.meta.glob("literal", someVar, 123);
 
       const result = analyzeTypeScript(code, resolveRules);
 
-      expect(result.warnings).toMatchInlineSnapshot(`
+      expect(result.errors).toMatchInlineSnapshot(`
         [
           {
             "end": 82,
             "message": "Method resolve called with non-literal arguments",
-            "methodName": "resolve",
-            "nonLiteralArgs": [
-              {
-                "index": 0,
-                "type": "Identifier",
-              },
-            ],
+            "meta": {
+              "method": "resolve",
+              "nonLiteralArgs": [
+                {
+                  "index": 0,
+                  "type": "Identifier",
+                },
+              ],
+            },
             "start": 50,
           },
           {
             "end": 139,
             "message": "Method glob called with non-literal arguments",
-            "methodName": "glob",
-            "nonLiteralArgs": [
-              {
-                "index": 1,
-                "type": "Identifier",
-              },
-            ],
+            "meta": {
+              "method": "glob",
+              "nonLiteralArgs": [
+                {
+                  "index": 1,
+                  "type": "Identifier",
+                },
+              ],
+            },
             "start": 98,
           },
         ]
@@ -212,8 +216,8 @@ const mixed = import.meta.glob("literal", someVar, 123);
 
       expect(result).toMatchInlineSnapshot(`
         {
+          "errors": [],
           "replacements": [],
-          "warnings": [],
         }
       `);
     });
