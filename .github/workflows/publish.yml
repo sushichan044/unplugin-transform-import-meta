@@ -17,7 +17,7 @@ permissions:
 jobs:
   release:
     name: Release
-    if: github.repository == 'sushichan044/template-ts-lib-polyrepo'
+    if: github.repository == 'sushichan044/unplugin-transform-import-meta'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

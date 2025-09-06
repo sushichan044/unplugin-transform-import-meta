@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   publish:
-    if: github.repository == 'sushichan044/template-ts-lib-polyrepo' && (github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'cr-tracked'))
+    if: github.repository == 'sushichan044/unplugin-transform-import-meta' && (github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'cr-tracked'))
     name: Publish to pkg-pr-new (Publish Preview Package)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
