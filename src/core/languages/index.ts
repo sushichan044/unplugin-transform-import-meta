@@ -7,6 +7,9 @@ import { createECMAScriptProcessor } from "./ecmascript";
 
 type SupportedLanguage = "astro" | "ecma";
 
+/**
+ * @package
+ */
 export async function createProcessor(
   lang: SupportedLanguage,
 ): Promise<LanguageProcessor> {
@@ -31,6 +34,8 @@ export async function createProcessor(
  *
  * @param filename - The filename to detect the language of.
  * @returns The language of the filename, or null if unsupported.
+ *
+ * @package
  */
 export function detectLanguage(filename: string): SupportedLanguage | null {
   if (isDtsLike(filename)) {

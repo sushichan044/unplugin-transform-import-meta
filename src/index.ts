@@ -2,14 +2,18 @@ import type { UnpluginInstance } from "unplugin";
 
 import { createUnplugin } from "unplugin";
 
-import type { Options } from "./core/options";
+import type { Options } from "./core";
 
-import { createProcessor, detectLanguage } from "./core/languages";
-import { createTransformContext } from "./core/languages/context";
-import { resolveOptions } from "./core/options";
-import { createReservedAsserter } from "./core/reserved";
+import {
+  createProcessor,
+  createReservedAssertion,
+  createTransformContext,
+  detectLanguage,
+  resolveOptions,
+} from "./core";
 
-export type { Options } from "./core/options";
+export type { Options } from "./core";
+export type { ResolveRules } from "./core";
 
 const pluginName = "unplugin-transform-import-meta";
 
@@ -18,7 +22,7 @@ export const unpluginTransformImportMeta: UnpluginInstance<
   false
 > = createUnplugin((rawOptions = {}) => {
   const options = resolveOptions(rawOptions);
-  const assertNotReserved = createReservedAsserter(options.resolveRules);
+  const assertNotReserved = createReservedAssertion(options.resolveRules);
   // Detect overridden reserved properties specified at import-meta-registry
   assertNotReserved.WinterTC();
 

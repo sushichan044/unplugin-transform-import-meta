@@ -3,12 +3,10 @@ import type { MemberExpression, Node } from "@oxc-project/types";
 import oxc from "oxc-parser";
 import { walk } from "zimmerframe";
 
-import type { LiteralValue, ResolveRules } from "./types";
-import type { TextReplacement } from "./types";
+import type { LiteralValue, TextReplacement, ResolveRules } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
-import { includesImportMeta } from "./index";
-import { serializeLiteralValue } from "./utils";
+import { serializeLiteralValue, includesImportMeta } from "./utils";
 
 interface AnalysisError {
   end: number;
@@ -27,6 +25,8 @@ interface AnalysisResult {
  * @param code - The TypeScript code to analyze.
  * @param resolveRules - The resolve rules to use.
  * @returns
+ *
+ * @package
  */
 export function analyzeTypeScript(
   code: string,

@@ -1,11 +1,11 @@
 import type { Awaitable } from "../../utils/types";
-import type { ResolveRules } from "../types";
-import type { TransformerContext } from "./context";
+import type { TransformerContext } from "../context";
+import { ResolveRules } from "../types";
 
 /**
  * @package
  */
-export interface TransformResult {
+interface TransformResult {
   code: string;
   map?: string | null | undefined;
 }

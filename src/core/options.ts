@@ -5,6 +5,9 @@ import type { ResolveRules } from "./types";
 
 import { REGEX_ASTRO_LIKE, REGEX_ECMA_LIKE } from "./languages";
 
+/**
+ * @package
+ */
 export interface Options {
   enforce?: "post" | "pre" | undefined;
   exclude?: FilterPattern;
@@ -12,6 +15,9 @@ export interface Options {
   resolveRules?: Partial<ResolveRules>;
 }
 
+/**
+ * @package
+ */
 export interface OptionsResolved {
   enforce?: "post" | "pre";
   exclude?: NonReadOnly<FilterPattern>;
@@ -19,6 +25,9 @@ export interface OptionsResolved {
   resolveRules: ResolveRules;
 }
 
+/**
+ * @package
+ */
 export function resolveOptions(options: Options): OptionsResolved {
   return {
     enforce: "enforce" in options ? options.enforce : "pre",

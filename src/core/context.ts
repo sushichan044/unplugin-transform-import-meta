@@ -1,12 +1,15 @@
 import type { UnpluginContext } from "unplugin";
 
-import { applyReplacements } from "../utils";
+import { applyReplacements } from "./utils";
 
-export interface TransformerLogger {
+interface TransformerLogger {
   error: UnpluginContext["error"];
   warn: UnpluginContext["warn"];
 }
 
+/**
+ * @package
+ */
 export interface TransformerContext {
   helpers: {
     applyReplacements: typeof applyReplacements;
@@ -15,6 +18,9 @@ export interface TransformerContext {
   logger: TransformerLogger;
 }
 
+/**
+ * @package
+ */
 export function createTransformContext(
   unpluginContext: UnpluginContext,
   id: string,

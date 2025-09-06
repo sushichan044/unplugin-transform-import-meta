@@ -2,7 +2,7 @@ import { rollupBuild, testFixtures } from "@sxzz/test-utils";
 import path from "node:path";
 import { describe } from "vitest";
 
-import type { ResolveRules } from "../src/core/types";
+import type { ResolveRules } from "../src/api";
 
 import unpluginResolveImportMeta from "../src/rollup";
 

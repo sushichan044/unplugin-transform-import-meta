@@ -2,6 +2,9 @@ import MagicString from "magic-string";
 
 import type { LiteralValue, TextReplacement } from "./types";
 
+/**
+ * @package
+ */
 export function applyReplacements(
   source: string,
   replacements: TextReplacement[],
@@ -15,6 +18,9 @@ export function applyReplacements(
   return magicString.toString();
 }
 
+/**
+ * @package
+ */
 export function serializeLiteralValue(value: LiteralValue): string {
   if (value instanceof RegExp) {
     return value.toString();
@@ -26,4 +32,11 @@ export function serializeLiteralValue(value: LiteralValue): string {
   }
 
   return JSON.stringify(value);
+}
+
+/**
+ * @package
+ */
+export function includesImportMeta(code: string): boolean {
+  return code.includes("import.meta");
 }

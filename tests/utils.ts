@@ -1,4 +1,4 @@
-import { createTransformContext } from "../src/core/languages/context";
+import { createTransformContext } from "../src/api";
 
 export function createTestContext(id: string) {
   return createTransformContext(

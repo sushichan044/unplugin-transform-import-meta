@@ -2,15 +2,17 @@ import type { Node, TagLikeNode } from "@astrojs/compiler/types";
 
 import { walk } from "zimmerframe";
 
-import type { ResolveRules } from "../types";
-import type { TextReplacement } from "../types";
-import type { TransformerContext } from "./context";
+import type { TransformerContext } from "../context";
+import type { ResolveRules, TextReplacement } from "../types";
 import type { LanguageProcessor } from "./types";
 
 import { tryImport } from "../../utils/import";
 import { analyzeTypeScript } from "../analyze";
-import { includesImportMeta } from "../index";
+import { includesImportMeta } from "../utils";
 
+/**
+ * @package
+ */
 export async function createAstroProcessor(): Promise<LanguageProcessor> {
   const astro =
     // eslint-disable-next-line @typescript-eslint/consistent-type-imports

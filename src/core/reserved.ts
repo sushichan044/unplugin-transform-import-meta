@@ -11,7 +11,10 @@ interface ReservedAsserter {
   WinterTC: () => void;
 }
 
-export function createReservedAsserter(
+/**
+ * @package
+ */
+export function createReservedAssertion(
   resolveRules: ResolveRules,
 ): ReservedAsserter {
   const inputProperties = Array.from(

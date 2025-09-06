@@ -2,9 +2,9 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import type { ResolveRules } from "../src/core/types";
+import type { ResolveRules } from "../src/api";
 
-import { createProcessor, detectLanguage } from "../src/core/languages";
+import { createProcessor, detectLanguage } from "../src/api";
 import { createTestContext } from "./utils";
 
 describe("Astro support", () => {

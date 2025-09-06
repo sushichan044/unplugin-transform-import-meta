@@ -1,3 +1,6 @@
-export function includesImportMeta(code: string): boolean {
-  return code.includes("import.meta");
-}
+export { createTransformContext } from "./context";
+export { createProcessor, detectLanguage } from "./languages";
+export { resolveOptions } from "./options";
+export type { Options, OptionsResolved } from "./options";
+export { createReservedAssertion } from "./reserved";
+export type { ResolveRules } from "./types";
