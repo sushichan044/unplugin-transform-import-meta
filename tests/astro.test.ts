@@ -1,6 +1,11 @@
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { createProcessor, detectLanguage } from "../src/core/processors";
+import type { ResolveRules } from "../src";
+
+import { createProcessor, detectLanguage } from "../src/core/languages";
+import { createTestContext } from "./utils";
 
 describe("Astro support", () => {
   it("should detect Astro files", () => {
@@ -10,131 +15,34 @@ describe("Astro support", () => {
     expect(detectLanguage("index.ts")).toBe("ecma");
   });
 
-  it("should transform import.meta in Astro frontmatter", async () => {
-    const resolveRules = {
-      methods: {},
+  it("should transform import.meta in all Astro contexts (frontmatter + script + expression)", async () => {
+    const source = await readFile(
+      fileURLToPath(new URL("./fixtures/astro/before.astro", import.meta.url)),
+      "utf-8",
+    );
+
+    const resolveRules: ResolveRules = {
+      methods: {
+        glob: (...args) => args.join(","),
+      },
       properties: {
-        "env.BASE_URL": "/app/",
-        "env.NODE_ENV": "development",
+        "env.MODE": "build",
+        "env.NODE_ENV": "production",
+        "env.RELEASED": true,
+        HEADING: "heading",
+        KLASS: "className",
       },
     };
 
-    const source = `---
-const title = "Astro Test Page";
-const env = import.meta.env.NODE_ENV;
-const baseUrl = import.meta.env.BASE_URL;
----
-
-<html>
-<head>
-    <title>{title}</title>
-</head>
-<body>
-    <h1>{title}</h1>
-    <p>Environment: {env}</p>
-    <p>Base URL: {baseUrl}</p>
-</body>
-</html>`;
-
-    const processor = createProcessor("test.astro");
+    const processor = await createProcessor("astro");
     const result = await processor.transform(
+      createTestContext("before.astro"),
       source,
-      "test.astro",
       resolveRules,
     );
 
-    expect(result.code).not.toContain("import.meta.env.NODE_ENV");
-    expect(result.code).not.toContain("import.meta.env.BASE_URL");
-    expect(result.code).toMatchInlineSnapshot(`
-      "---
-      const title = "Astro Test Page";
-      const env = "development";
-      const baseUrl = "/app/";
-      ---
-
-      <html>
-      <head>
-          <title>{title}</title>
-      </head>
-      <body>
-          <h1>{title}</h1>
-          <p>Environment: {env}</p>
-          <p>Base URL: {baseUrl}</p>
-      </body>
-      </html>"
-    `);
-  });
-
-  it.skip("should transform import.meta in Astro script tags", async () => {
-    // TODO: Implement script tag transformation
-    const source = `---
-const title = "Astro Test Page";
----
-
-<html>
-<head>
-    <title>{title}</title>
-</head>
-<body>
-    <h1>{title}</h1>
-
-    <script>
-        console.log("Client script:", import.meta.env.MODE);
-        const apiUrl = import.meta.env.PUBLIC_API_URL || "http://localhost";
-    </script>
-</body>
-</html>`;
-
-    const resolveRules = {
-      methods: {},
-      properties: {
-        "env.MODE": "production",
-        "env.PUBLIC_API_URL": "https://api.example.com",
-      },
-    };
-
-    const processor = createProcessor("test.astro");
-    const result = await processor.transform(
-      source,
-      "test.astro",
-      resolveRules,
+    await expect(result?.code).toMatchFileSnapshot(
+      "fixtures/astro/after.astro",
     );
-
-    expect(result.code).toContain('"production"');
-    expect(result.code).toContain('"https://api.example.com"');
-    expect(result.code).not.toContain("import.meta.env.MODE");
-    expect(result.code).not.toContain("import.meta.env.PUBLIC_API_URL");
-  });
-
-  it("should handle Astro file without import.meta", async () => {
-    const source = `---
-const title = "Simple Astro Page";
----
-
-<html>
-<head>
-    <title>{title}</title>
-</head>
-<body>
-    <h1>{title}</h1>
-</body>
-</html>`;
-
-    const resolveRules = {
-      methods: {},
-      properties: {
-        "env.NODE_ENV": "development",
-      },
-    };
-
-    const processor = createProcessor("test.astro");
-    const result = await processor.transform(
-      source,
-      "test.astro",
-      resolveRules,
-    );
-
-    expect(result.code).toBe(source);
-    expect(result.warnings).toHaveLength(0);
   });
 });

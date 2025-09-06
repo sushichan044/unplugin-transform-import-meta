@@ -1,13 +1,6 @@
 import type { FilterPattern } from "unplugin-utils";
 
-export type LiteralValue =
-  | bigint
-  | boolean
-  | number
-  | string
-  | RegExp
-  | null
-  | undefined;
+import type { LiteralValue } from "./types";
 
 export type MethodFunction = (...args: LiteralValue[]) => LiteralValue;
 

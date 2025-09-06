@@ -1,0 +1,18 @@
+---
+const env = import.meta.env.NODE_ENV;
+---
+
+<html>
+<body>
+    <h1 class={import.meta.KLASS}>{import.meta.HEADING}</h1>
+    <p>Environment: {env}</p>
+    {
+        import.meta.env.RELEASED ? <div>Released</div> : <div>Not Released</div>
+    }
+</body>
+</html>
+
+<script>
+    console.log(`Client script: ${import.meta.env.MODE}`);
+    console.log(`${import.meta.glob('./files/*.js', '**/*.ts')}`);
+</script>

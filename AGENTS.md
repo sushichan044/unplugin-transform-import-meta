@@ -52,11 +52,11 @@ The plugin processes files containing `import.meta` and transforms them:
 
 ### Testing Strategy
 
-Uses `@sxzz/test-utils` for fixture-based testing:
-
-- Test files in `tests/*.test.ts`
-- Fixtures in `tests/fixtures/*.js`
+- Unit test: place at same directory as implementation with `*.test.ts`
+- Integration test: place at `tests/*.test.ts`
+- Fixtures in `tests/fixtures/`
 - Platform-specific build testing (rollup example provided)
+  - Use `@sxzz/test-utils` for fixture-based testing
 
 ## Key Configuration Files
 

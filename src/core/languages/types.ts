@@ -1,12 +1,13 @@
 import type { Awaitable } from "../../utils/types";
 import type { ResolveRules } from "../options";
+import type { TransformerContext } from "./context";
 
 /**
  * @package
  */
 export interface TransformResult {
   code: string;
-  warnings: string[];
+  map?: string | null | undefined;
 }
 
 /**
@@ -14,8 +15,8 @@ export interface TransformResult {
  */
 export interface LanguageProcessor {
   transform(
+    context: TransformerContext,
     code: string,
-    filename: string,
-    resolveRules: ResolveRules,
-  ): Awaitable<TransformResult>;
+    rules: ResolveRules,
+  ): Awaitable<TransformResult | null>;
 }
