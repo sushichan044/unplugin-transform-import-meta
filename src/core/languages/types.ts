@@ -1,6 +1,6 @@
 import type { Awaitable } from "../../utils/types";
 import type { TransformerContext } from "../context";
-import { ResolveRules } from "../types";
+import type { ResolveRules } from "../types";
 
 /**
  * @package

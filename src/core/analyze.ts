@@ -3,10 +3,10 @@ import type { MemberExpression, Node } from "@oxc-project/types";
 import oxc from "oxc-parser";
 import { walk } from "zimmerframe";
 
-import type { LiteralValue, TextReplacement, ResolveRules } from "./types";
+import type { LiteralValue, ResolveRules, TextReplacement } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
-import { serializeLiteralValue, includesImportMeta } from "./utils";
+import { includesImportMeta, serializeLiteralValue } from "./utils";
 
 interface AnalysisError {
   end: number;
