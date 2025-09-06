@@ -8,19 +8,24 @@ import type { Writeable } from "./utils/types";
 import { createProcessor, detectLanguage } from "./core/languages";
 import { createTransformContext } from "./core/languages/context";
 import { resolveOptions } from "./core/options";
+import { createReservedAsserter } from "./core/reserved";
 
 export type { Options, ResolveRules } from "./core/options";
+
+const pluginName = "unplugin-transform-import-meta";
 
 export const unpluginTransformImportMeta: UnpluginInstance<
   Options | undefined,
   false
 > = createUnplugin((rawOptions = {}) => {
   const options = resolveOptions(rawOptions);
+  const assertNotReserved = createReservedAsserter(options.resolveRules);
+  // Detect overridden reserved properties specified at import-meta-registry
+  assertNotReserved.WinterTC();
 
-  const name = "unplugin-transform-import-meta";
   return {
     enforce: options.enforce,
-    name,
+    name: pluginName,
 
     transform: {
       filter: {
@@ -35,15 +40,16 @@ export const unpluginTransformImportMeta: UnpluginInstance<
         },
       },
       async handler(this, code, id) {
-        if (Object.keys(options.resolveRules?.methods ?? {}).length === 0) {
-          return;
-        }
-        if (Object.keys(options.resolveRules?.properties ?? {}).length === 0) {
+        if (
+          Object.keys(options.resolveRules.methods).length === 0 ||
+          Object.keys(options.resolveRules.properties).length === 0
+        ) {
           return;
         }
 
         const lang = detectLanguage(id);
         if (lang == null) {
+          this.warn(`Unsupported file type: ${id}`);
           return;
         }
 
@@ -60,10 +66,49 @@ export const unpluginTransformImportMeta: UnpluginInstance<
 
           return await processor.transform(c, code, options.resolveRules);
         } catch (error) {
-          console.warn(`Failed to transform import.meta in code:`, error);
-          return code;
+          this.warn(`Failed to transform ${id} (${String(error)})`);
+          return;
         }
       },
+    },
+
+    // Detect overridden reserved properties in the appropriate hooks for each bundler
+    esbuild: {
+      setup: () => {
+        assertNotReserved.esbuild();
+      },
+    },
+
+    farm: {
+      configResolved: () => {
+        assertNotReserved.farm();
+      },
+    },
+
+    rolldown: {
+      buildStart: () => {
+        assertNotReserved.rolldown();
+      },
+    },
+
+    rollup: {
+      buildStart: () => {
+        assertNotReserved.rollup();
+      },
+    },
+
+    rspack: () => {
+      assertNotReserved.rspack();
+    },
+
+    vite: {
+      configResolved() {
+        assertNotReserved.vite();
+      },
+    },
+
+    webpack: () => {
+      assertNotReserved.webpack();
     },
   };
 });
