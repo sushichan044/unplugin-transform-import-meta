@@ -5,7 +5,7 @@ const env = import.meta.env.NODE_ENV;
 <html>
 <body>
     <h1 class={import.meta.KLASS}>{import.meta.HEADING}</h1>
-    <p>Environment: {env}</p>
+    <p class={`${import.meta.KLASS}`}>Environment: {env}</p>
     {
         import.meta.env.RELEASED ? <div>Released</div> : <div>Not Released</div>
     }

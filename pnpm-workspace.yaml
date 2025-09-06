@@ -1,0 +1,10 @@
+
+catalogs:
+  bundlers:
+    '@farmfe/core': ^1.7.11
+    '@rspack/core': ^1.5.0
+    esbuild: ^0.25.9
+    rolldown: ^1.0.0-beta.33
+    rollup: ^4.46.4
+    vite: ^7.1.3
+    webpack: ^5.101.3
