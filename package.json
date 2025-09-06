@@ -33,9 +33,7 @@
     "provenance": true
   },
   "funding": "https://github.com/sponsors/sushichan044",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -53,10 +51,7 @@
   },
   "typesVersions": {
     "*": {
-      "*": [
-        "./dist/*",
-        "./*"
-      ]
+      "*": ["./dist/*", "./*"]
     }
   },
   "scripts": {
