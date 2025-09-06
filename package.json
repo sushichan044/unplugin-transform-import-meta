@@ -56,7 +56,7 @@
     }
   },
   "scripts": {
-    "lint": "eslint --max-warnings 0 --fix --cache .",
+    "lint": "eslint --concurrency=auto --max-warnings 0 --fix --cache .",
     "format": "biome format --write .",
     "format:check": "biome format . --reporter=github",
     "typecheck": "tsc --noEmit",
