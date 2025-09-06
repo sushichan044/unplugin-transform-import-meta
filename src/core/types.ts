@@ -1,4 +1,4 @@
-export interface CodeReplacement {
+export interface TextReplacement {
   end: number;
   replacement: string;
   start: number;

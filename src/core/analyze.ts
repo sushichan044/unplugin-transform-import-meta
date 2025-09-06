@@ -5,7 +5,7 @@ import { walk } from "zimmerframe";
 
 import type { ResolveRules } from "./options";
 import type { LiteralValue } from "./types";
-import type { CodeReplacement } from "./types";
+import type { TextReplacement } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
 import { includesImportMeta } from "./index";
@@ -23,7 +23,7 @@ interface AnalysisWarning {
 }
 
 interface AnalysisResult {
-  replacements: CodeReplacement[];
+  replacements: TextReplacement[];
   warnings: AnalysisWarning[];
 }
 
@@ -45,7 +45,7 @@ export function analyzeTypeScript(
   }
 
   const ast = parseProgram(code);
-  const transformations: CodeReplacement[] = [];
+  const transformations: TextReplacement[] = [];
   const warnings: AnalysisWarning[] = [];
 
   walk(

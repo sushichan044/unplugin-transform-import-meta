@@ -1,10 +1,10 @@
 import MagicString from "magic-string";
 
-import type { CodeReplacement, LiteralValue } from "./types";
+import type { LiteralValue, TextReplacement } from "./types";
 
 export function applyReplacements(
   source: string,
-  replacements: CodeReplacement[],
+  replacements: TextReplacement[],
 ): string {
   const magicString = new MagicString(source);
 
