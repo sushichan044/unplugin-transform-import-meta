@@ -1,6 +1,6 @@
 {
   "name": "unplugin-transform-import-meta",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "description": "Transform ImportMeta properties and methods at build-time.",
   "sideEffects": false,
