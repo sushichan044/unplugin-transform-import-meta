@@ -2,7 +2,7 @@ import { rollupBuild, testFixtures } from "@sxzz/test-utils";
 import path from "node:path";
 import { describe } from "vitest";
 
-import type { MethodFunction } from "../src/core/options";
+import type { ResolveRules } from "../src/core/types";
 
 import unpluginResolveImportMeta from "../src/rollup";
 
@@ -11,20 +11,18 @@ describe("rollup", async () => {
   await testFixtures(
     "*.js",
     async (_args, id) => {
-      const resolveRules = id.includes("import-meta")
-        ? {
-            methods: {
-              bar: (() => "method-result") as MethodFunction,
-              getVersion: ((...args) => `v${args[0]}`) as MethodFunction,
-              resolve: ((...args) => `resolved-${args[0]}`) as MethodFunction,
-            },
-            properties: {
-              environment: "production",
-              foo: "resolved-foo",
-              NODE_ENV: "test",
-            },
-          }
-        : {};
+      const resolveRules = {
+        methods: {
+          bar: () => "method-result",
+          getVersion: (...args) => `v${args[0]}`,
+          resolveSomething: (...args) => `resolved-${args[0]}`,
+        },
+        properties: {
+          environment: "production",
+          foo: "resolved-foo",
+          NODE_ENV: "test",
+        },
+      } satisfies ResolveRules;
 
       const { snapshot } = await rollupBuild(id, [
         unpluginResolveImportMeta({ resolveRules }),

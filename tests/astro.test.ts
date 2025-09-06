@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import type { ResolveRules } from "../src";
+import type { ResolveRules } from "../src/core/types";
 
 import { createProcessor, detectLanguage } from "../src/core/languages";
 import { createTestContext } from "./utils";

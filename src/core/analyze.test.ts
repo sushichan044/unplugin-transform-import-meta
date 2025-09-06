@@ -1,7 +1,7 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import type { ResolveRules } from "./options";
+import type { ResolveRules } from "./types";
 
 import { analyzeTypeScript } from "./analyze";
 import { applyReplacements } from "./utils";
@@ -11,6 +11,7 @@ describe("analyzeTypeScript", () => {
     it("should not generate replacements when code does not include MetaProperty", () => {
       const code = "const foo = not_import.meta.foo;";
       const resolveRules: ResolveRules = {
+        methods: {},
         properties: { foo: true },
       };
 
@@ -23,6 +24,7 @@ describe("analyzeTypeScript", () => {
     it("should transform simple property access", () => {
       const code = "const foo = import.meta.foo;";
       const resolveRules: ResolveRules = {
+        methods: {},
         properties: {
           foo: true,
         },
@@ -38,6 +40,7 @@ describe("analyzeTypeScript", () => {
     it("should not transform unknown properties", () => {
       const code = "const unknown = import.meta.unknown;";
       const resolveRules: ResolveRules = {
+        methods: {},
         properties: {
           foo: true,
         },
@@ -50,6 +53,7 @@ describe("analyzeTypeScript", () => {
     it("should transform import.meta in function arguments", () => {
       const code = "console.log(import.meta.env);";
       const resolveRules: ResolveRules = {
+        methods: {},
         properties: {
           env: "production",
         },
@@ -65,6 +69,7 @@ describe("analyzeTypeScript", () => {
     it("should handle nested property access", () => {
       const code = "const nested = import.meta.config.database.host;";
       const resolveRules: ResolveRules = {
+        methods: {},
         properties: {
           "config.database.host": "localhost",
         },
@@ -82,6 +87,7 @@ describe("analyzeTypeScript", () => {
     it("should handle regular expressions", () => {
       const code = "const a = import.meta.a;";
       const resolveRules: ResolveRules = {
+        methods: {},
         properties: { a: /regex/ },
       };
       const result = analyzeTypeScript(code, resolveRules);
@@ -99,6 +105,7 @@ describe("analyzeTypeScript", () => {
         methods: {
           resolve: (p) => path.join("resolved", String(p)),
         },
+        properties: {},
       };
 
       const result = analyzeTypeScript(code, resolveRules);
@@ -116,6 +123,7 @@ describe("analyzeTypeScript", () => {
         methods: {
           "utils.resolve": (p) => path.join("resolved", String(p)),
         },
+        properties: {},
       };
 
       const result = analyzeTypeScript(code, resolveRules);
@@ -139,6 +147,7 @@ const mixed = import.meta.glob("literal", someVar, 123);
           glob: (...args) => `globbed:${args.join(",")}`,
           resolve: (path) => `resolved:${String(path)}`,
         },
+        properties: {},
       };
 
       const result = analyzeTypeScript(code, resolveRules);
@@ -182,6 +191,7 @@ const mixed = import.meta.glob("literal", someVar, 123);
         methods: {
           resolve: (path) => `resolved:${path}`,
         },
+        properties: {},
       };
 
       const result = analyzeTypeScript(code, resolveRules);
@@ -195,6 +205,7 @@ const mixed = import.meta.glob("literal", someVar, 123);
         methods: {
           resolve: (path) => `resolved:${path}`,
         },
+        properties: {},
       };
 
       const result = analyzeTypeScript(code, resolveRules);

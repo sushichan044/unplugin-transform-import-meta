@@ -1,16 +1,9 @@
 import type { FilterPattern } from "unplugin-utils";
 
 import type { NonReadOnly } from "../utils/types";
-import type { LiteralValue } from "./types";
+import type { ResolveRules } from "./types";
 
 import { REGEX_ASTRO_LIKE, REGEX_ECMA_LIKE } from "./languages";
-
-export type MethodFunction = (...args: LiteralValue[]) => LiteralValue;
-
-export interface ResolveRules {
-  methods: Record<string, MethodFunction>;
-  properties: Record<string, LiteralValue>;
-}
 
 export interface Options {
   enforce?: "post" | "pre" | undefined;

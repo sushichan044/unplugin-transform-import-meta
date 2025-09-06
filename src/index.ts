@@ -9,7 +9,7 @@ import { createTransformContext } from "./core/languages/context";
 import { resolveOptions } from "./core/options";
 import { createReservedAsserter } from "./core/reserved";
 
-export type { Options, ResolveRules } from "./core/options";
+export type { Options } from "./core/options";
 
 const pluginName = "unplugin-transform-import-meta";
 

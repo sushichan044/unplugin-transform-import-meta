@@ -2,7 +2,7 @@ import type { Node, TagLikeNode } from "@astrojs/compiler/types";
 
 import { walk } from "zimmerframe";
 
-import type { ResolveRules } from "../options";
+import type { ResolveRules } from "../types";
 import type { TextReplacement } from "../types";
 import type { TransformerLogger } from "./context";
 import type { LanguageProcessor } from "./types";

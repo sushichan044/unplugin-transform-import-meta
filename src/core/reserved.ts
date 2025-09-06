@@ -1,4 +1,4 @@
-import type { ResolveRules } from "./options";
+import type { ResolveRules } from "./types";
 
 interface ReservedAsserter {
   esbuild: () => void;

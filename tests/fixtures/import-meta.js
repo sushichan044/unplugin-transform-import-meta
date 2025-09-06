@@ -3,7 +3,7 @@ const foo = import.meta.foo;
 const isDev = import.meta.NODE_ENV;
 
 // Method calls
-const resolved = import.meta.resolve("./file");
+const resolved = import.meta.resolveSomething("./file");
 const barResult = import.meta.bar();
 
 // Complex expressions

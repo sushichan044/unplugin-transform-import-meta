@@ -3,8 +3,7 @@ import type { MemberExpression, Node } from "@oxc-project/types";
 import oxc from "oxc-parser";
 import { walk } from "zimmerframe";
 
-import type { ResolveRules } from "./options";
-import type { LiteralValue } from "./types";
+import type { LiteralValue, ResolveRules } from "./types";
 import type { TextReplacement } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
