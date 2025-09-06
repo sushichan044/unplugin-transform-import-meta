@@ -1,6 +1,6 @@
 import type { Awaitable } from "../../utils/types";
 import type { TransformerContext } from "../context";
-import type { ResolveRules } from "../types";
+import type { ImportMetaBindings } from "../types";
 
 /**
  * @package
@@ -17,6 +17,6 @@ export interface LanguageProcessor {
   transform(
     context: TransformerContext,
     code: string,
-    rules: ResolveRules,
+    bindings: ImportMetaBindings,
   ): Awaitable<TransformResult | null>;
 }

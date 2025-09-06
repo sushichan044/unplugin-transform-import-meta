@@ -3,7 +3,11 @@ import type { MemberExpression, Node } from "@oxc-project/types";
 import oxc from "oxc-parser";
 import { walk } from "zimmerframe";
 
-import type { LiteralValue, ResolveRules, TextReplacement } from "./types";
+import type {
+  ImportMetaBindings,
+  LiteralValue,
+  TextReplacement,
+} from "./types";
 
 import { isNonEmptyString } from "../utils/string";
 import { includesImportMeta, serializeLiteralValue } from "./utils";
@@ -23,14 +27,14 @@ interface AnalysisResult {
 /**
  * Analyze the TypeScript code and return the replacements and warnings.
  * @param code - The TypeScript code to analyze.
- * @param resolveRules - The resolve rules to use.
+ * @param bindings - The import.meta bindings.
  * @returns
  *
  * @package
  */
 export function analyzeTypeScript(
   code: string,
-  resolveRules: ResolveRules,
+  bindings: ImportMetaBindings,
 ): AnalysisResult {
   if (!includesImportMeta(code)) {
     return {
@@ -52,10 +56,10 @@ export function analyzeTypeScript(
           const accessPath = getAccessPath(node);
           if (
             isNonEmptyString(accessPath) &&
-            resolveRules.properties?.[accessPath] != null
+            bindings.values?.[accessPath] != null
           ) {
             const replacement = serializeLiteralValue(
-              resolveRules.properties[accessPath],
+              bindings.values[accessPath],
             );
             const [start, end] = getRange(node);
 
@@ -84,7 +88,7 @@ export function analyzeTypeScript(
           const methodPath = getAccessPath(node.callee);
           if (
             isNonEmptyString(methodPath) &&
-            resolveRules.methods?.[methodPath]
+            bindings.functions?.[methodPath]
           ) {
             const literalArgs: Array<LiteralValue | null> = [];
             const nonLiteralArgs: Array<{ index: number; type: string }> = [];
@@ -112,7 +116,7 @@ export function analyzeTypeScript(
             }
 
             try {
-              const result = resolveRules.methods[methodPath](...literalArgs);
+              const result = bindings.functions[methodPath](...literalArgs);
               const replacement = serializeLiteralValue(result);
 
               replacements.push({

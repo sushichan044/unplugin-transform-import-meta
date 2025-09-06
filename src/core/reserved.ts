@@ -1,4 +1,4 @@
-import type { ResolveRules } from "./types";
+import type { ImportMetaBindings } from "./types";
 
 interface ReservedAsserter {
   esbuild: () => void;
@@ -15,12 +15,12 @@ interface ReservedAsserter {
  * @package
  */
 export function createReservedAssertion(
-  resolveRules: ResolveRules,
+  bindings: ImportMetaBindings,
 ): ReservedAsserter {
   const inputProperties = Array.from(
     new Set([
-      ...Object.keys(resolveRules.methods),
-      ...Object.keys(resolveRules.properties),
+      ...Object.keys(bindings.functions),
+      ...Object.keys(bindings.values),
     ]),
   );
 

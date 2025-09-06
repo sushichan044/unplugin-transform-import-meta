@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import type { ResolveRules } from "../src/api";
+import type { ImportMetaBindings } from "../src/api";
 
 import { createProcessor, detectLanguage } from "../src/api";
 import { createTestContext } from "./utils";
@@ -21,11 +21,11 @@ describe("Astro support", () => {
       "utf-8",
     );
 
-    const resolveRules: ResolveRules = {
-      methods: {
+    const bindings: ImportMetaBindings = {
+      functions: {
         glob: (...args) => args.join(","),
       },
-      properties: {
+      values: {
         "env.MODE": "build",
         "env.NODE_ENV": "production",
         "env.RELEASED": true,
@@ -38,7 +38,7 @@ describe("Astro support", () => {
     const result = await processor.transform(
       createTestContext("before.astro"),
       source,
-      resolveRules,
+      bindings,
     );
 
     await expect(result?.code).toMatchFileSnapshot(

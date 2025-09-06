@@ -3,7 +3,7 @@ import type { Node, TagLikeNode } from "@astrojs/compiler/types";
 import { walk } from "zimmerframe";
 
 import type { TransformerContext } from "../context";
-import type { ResolveRules, TextReplacement } from "../types";
+import type { ImportMetaBindings, TextReplacement } from "../types";
 import type { LanguageProcessor } from "./types";
 
 import { tryImport } from "../../utils/import";
@@ -30,7 +30,7 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
   }
 
   return {
-    async transform(unCtx, code, resolveRules) {
+    async transform(unCtx, code, bindings) {
       if (!includesImportMeta(code)) {
         return null;
       }
@@ -50,7 +50,7 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
               return;
             }
 
-            const result = analyzeTypeScript(node.value, resolveRules);
+            const result = analyzeTypeScript(node.value, bindings);
             const s = node.position?.start?.offset ?? 0;
             const offset = s + 3; // 3: length of "---"
 
@@ -76,30 +76,22 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
           },
 
           element: (node, c) => {
-            allReplacements.push(
-              ...handleTagNode(unCtx, code, node, resolveRules),
-            );
+            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
             c.next();
           },
 
           fragment: (node, c) => {
-            allReplacements.push(
-              ...handleTagNode(unCtx, code, node, resolveRules),
-            );
+            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
             c.next();
           },
 
           component: (node, c) => {
-            allReplacements.push(
-              ...handleTagNode(unCtx, code, node, resolveRules),
-            );
+            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
             c.next();
           },
 
           "custom-element": (node, c) => {
-            allReplacements.push(
-              ...handleTagNode(unCtx, code, node, resolveRules),
-            );
+            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
             c.next();
           },
 
@@ -108,7 +100,7 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
 
             // We can write TS code only in <script> tag
             if (parent?.type === "element" && parent.name === "script") {
-              const result = analyzeTypeScript(node.value, resolveRules);
+              const result = analyzeTypeScript(node.value, bindings);
               const offset = node.position?.start?.offset ?? 0;
 
               const adjustedReplacements = result.replacements.map(
@@ -135,7 +127,7 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
           expression: (node) => {
             // serialize the expression to a block statement to parse whole expression
             const blockStmt = astroUtil.serialize(node);
-            const result = analyzeTypeScript(blockStmt, resolveRules);
+            const result = analyzeTypeScript(blockStmt, bindings);
 
             const s = node.position?.start?.offset ?? 0;
             const offset = s + 1; // 1: length of "{"
@@ -178,7 +170,7 @@ function handleTagNode(
   ctx: TransformerContext,
   code: string,
   node: TagLikeNode,
-  resolveRules: ResolveRules,
+  bindings: ImportMetaBindings,
 ): TextReplacement[] {
   const allReplacements: TextReplacement[] = [];
 
@@ -199,7 +191,7 @@ function handleTagNode(
     }
 
     if (includesImportMeta(attr.value)) {
-      const result = analyzeTypeScript(attr.value, resolveRules);
+      const result = analyzeTypeScript(attr.value, bindings);
       const s = attr.position?.start?.offset ?? 0;
       const offset = s + attr.name.length + 2; // 2: length of "={"
 
