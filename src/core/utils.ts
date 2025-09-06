@@ -22,6 +22,13 @@ export function applyReplacements(
  * @package
  */
 export function serializeLiteralValue(value: LiteralValue): string {
+  // Ensure the value is a valid literal
+  if (!isLiteralValue(value)) {
+    throw new TypeError(
+      `Value is not a valid literal: ${typeof value} (${String(value)})`,
+    );
+  }
+
   if (value instanceof RegExp) {
     return value.toString();
   }
@@ -32,6 +39,20 @@ export function serializeLiteralValue(value: LiteralValue): string {
   }
 
   return JSON.stringify(value);
+}
+
+/**
+ * @package
+ */
+export function isLiteralValue(value: unknown): value is LiteralValue {
+  return (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "string" ||
+    (typeof value === "number" && Number.isFinite(value)) ||
+    value instanceof RegExp ||
+    typeof value === "bigint"
+  );
 }
 
 /**

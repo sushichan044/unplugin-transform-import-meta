@@ -97,4 +97,24 @@ describe("serializeLiteralValue", () => {
       );
     });
   });
+
+  describe("error cases", () => {
+    const tc = [
+      undefined,
+      {},
+      [],
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      () => {},
+      Symbol("symbol"),
+      NaN,
+      Infinity,
+      -Infinity,
+    ];
+
+    it.each(tc)("should throw TypeError when value is %s", (value) => {
+      expect(() =>
+        serializeLiteralValue(value as unknown as LiteralValue),
+      ).toThrow(TypeError);
+    });
+  });
 });

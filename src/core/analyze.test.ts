@@ -162,32 +162,22 @@ const mixed = import.meta.glob("literal", someVar, 123);
       expect(result.errors).toMatchInlineSnapshot(`
         [
           {
-            "end": 82,
-            "message": "Method resolve called with non-literal arguments",
+            "end": 81,
+            "message": "Argument at index 0 of method import.meta.resolve() is not a literal",
             "meta": {
-              "method": "resolve",
-              "nonLiteralArgs": [
-                {
-                  "index": 0,
-                  "type": "Identifier",
-                },
-              ],
+              "argumentIndex": 0,
+              "argumentType": "Identifier",
             },
-            "start": 50,
+            "start": 70,
           },
           {
-            "end": 139,
-            "message": "Method glob called with non-literal arguments",
+            "end": 133,
+            "message": "Argument at index 1 of method import.meta.glob() is not a literal",
             "meta": {
-              "method": "glob",
-              "nonLiteralArgs": [
-                {
-                  "index": 1,
-                  "type": "Identifier",
-                },
-              ],
+              "argumentIndex": 1,
+              "argumentType": "Identifier",
             },
-            "start": 98,
+            "start": 126,
           },
         ]
       `);

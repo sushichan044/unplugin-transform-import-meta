@@ -10,7 +10,11 @@ import type {
 } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
-import { includesImportMeta, serializeLiteralValue } from "./utils";
+import {
+  includesImportMeta,
+  isLiteralValue,
+  serializeLiteralValue,
+} from "./utils";
 
 interface AnalysisError {
   end: number;
@@ -52,26 +56,42 @@ export function analyzeTypeScript(
     {},
     {
       MemberExpression: (node, c) => {
-        if (isImportMetaExpression(node)) {
-          const accessPath = getAccessPath(node);
-          if (
-            isNonEmptyString(accessPath) &&
-            bindings.values?.[accessPath] != null
-          ) {
-            const replacement = serializeLiteralValue(
-              bindings.values[accessPath],
-            );
-            const [start, end] = getRange(node);
+        c.next();
 
-            replacements.push({
-              end,
-              replacement,
-              start,
-            });
-          }
+        if (!isImportMetaExpression(node)) {
+          return;
         }
 
-        c.next();
+        const accessPath = getAccessPath(node);
+        const [start, end] = getRange(node);
+
+        if (
+          !isNonEmptyString(accessPath) ||
+          bindings.values?.[accessPath] == null
+        ) {
+          return;
+        }
+
+        const value = bindings.values[accessPath];
+        if (!isLiteralValue(value)) {
+          errors.push({
+            end,
+            message: `Value for import.meta.${accessPath} is not a valid literal`,
+            meta: {
+              accessPath,
+              valueType: typeof value,
+            },
+            start,
+          });
+          return;
+        }
+
+        const replacement = serializeLiteralValue(value);
+        replacements.push({
+          end,
+          replacement,
+          start,
+        });
       },
 
       CallExpression: (node, c) => {
@@ -82,52 +102,74 @@ export function analyzeTypeScript(
         // This should be after than args to allow like import.meta.method(import.meta.property).
         // Check all args and abort traversal
         if (
-          node.callee.type === "MemberExpression" &&
-          isImportMetaExpression(node.callee)
+          node.callee.type !== "MemberExpression" ||
+          !isImportMetaExpression(node.callee)
         ) {
-          const methodPath = getAccessPath(node.callee);
-          if (
-            isNonEmptyString(methodPath) &&
-            bindings.functions?.[methodPath]
-          ) {
-            const literalArgs: Array<LiteralValue | null> = [];
-            const nonLiteralArgs: Array<{ index: number; type: string }> = [];
+          return;
+        }
 
-            for (const [index, args] of node.arguments.entries()) {
-              if (args.type === "Literal") {
-                literalArgs.push(args.value);
-              } else {
-                literalArgs.push(null);
-                nonLiteralArgs.push({ index, type: args.type });
-              }
-            }
+        const methodPath = getAccessPath(node.callee);
+        if (
+          !isNonEmptyString(methodPath) ||
+          bindings.functions?.[methodPath] == null
+        ) {
+          return;
+        }
 
-            const [start, end] = getRange(node);
-            if (nonLiteralArgs.length > 0) {
-              errors.push({
-                end,
-                message: `Method ${methodPath} called with non-literal arguments`,
-                meta: {
-                  method: methodPath,
-                  nonLiteralArgs,
-                },
-                start,
-              });
-            }
-
-            try {
-              const result = bindings.functions[methodPath](...literalArgs);
-              const replacement = serializeLiteralValue(result);
-
-              replacements.push({
-                end,
-                replacement,
-                start,
-              });
-            } catch (error) {
-              console.warn(`Failed to execute method ${methodPath}:`, error);
-            }
+        const literalArgs: Array<LiteralValue | null> = [];
+        for (const [index, arg] of node.arguments.entries()) {
+          if (arg.type === "Literal") {
+            literalArgs.push(arg.value);
+          } else {
+            literalArgs.push(null);
+            const [argStart, argEnd] = getRange(arg);
+            errors.push({
+              end: argEnd,
+              message: `Argument at index ${index} of method import.meta.${methodPath}() is not a literal`,
+              meta: {
+                argumentIndex: index,
+                argumentType: arg.type,
+              },
+              start: argStart,
+            });
           }
+        }
+
+        const [callStart, callEnd] = getRange(node);
+
+        try {
+          const value = bindings.functions[methodPath](...literalArgs);
+
+          if (!isLiteralValue(value)) {
+            errors.push({
+              end: callEnd,
+              message: `Return value of method import.meta.${methodPath}() is not a valid literal`,
+              meta: {
+                method: methodPath,
+                returnValue: value,
+              },
+              start: callStart,
+            });
+            return;
+          }
+
+          const replacement = serializeLiteralValue(value);
+          replacements.push({
+            end: callEnd,
+            replacement,
+            start: callStart,
+          });
+        } catch (error) {
+          errors.push({
+            end: callEnd,
+            message: `Failed to execute method import.meta.${methodPath}(): ${String(
+              error,
+            )}`,
+            meta: {
+              method: methodPath,
+            },
+            start: callStart,
+          });
           return;
         }
       },
