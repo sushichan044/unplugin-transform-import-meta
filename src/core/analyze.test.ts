@@ -138,7 +138,26 @@ describe("analyzeTypeScript", () => {
       );
     });
 
-    it("should generate warnings for non-literal arguments", () => {
+    it("should handle literal-only TemplateLiterals", () => {
+      const code = "const resolvedPath = import.meta.resolve(`./file-raw`);";
+      const ImportMetaBindings: ImportMetaBindings = {
+        functions: {
+          resolve: (p: bigint | boolean | number | string | RegExp | null) =>
+            path.join("resolved", String(p)),
+        },
+        values: {},
+      };
+
+      const result = analyzeTypeScript(code, ImportMetaBindings);
+      expect(result.replacements).toHaveLength(1);
+
+      const transformed = applyReplacements(code, result.replacements);
+      expect(transformed).toMatchInlineSnapshot(
+        `"const resolvedPath = "resolved/file-raw";"`,
+      );
+    });
+
+    it("should generate errors for non-literal arguments", () => {
       const code = `
 const variableArg = "./file.js";
 const resolved = import.meta.resolve(variableArg);
@@ -182,8 +201,7 @@ const mixed = import.meta.glob("literal", someVar, 123);
         ]
       `);
 
-      // Should still create replacements despite warnings
-      expect(result.replacements).toHaveLength(2);
+      expect(result.replacements).toHaveLength(0);
     });
 
     it("should not transform unknown methods", () => {

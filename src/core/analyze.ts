@@ -117,22 +117,28 @@ export function analyzeTypeScript(
         }
 
         const literalArgs: Array<LiteralValue | null> = [];
+        let hasNonLiteralArg = false;
         for (const [index, arg] of node.arguments.entries()) {
           if (arg.type === "Literal") {
             literalArgs.push(arg.value);
-          } else {
-            literalArgs.push(null);
-            const [argStart, argEnd] = getRange(arg);
-            errors.push({
-              end: argEnd,
-              message: `Argument at index ${index} of method import.meta.${methodPath}() is not a literal`,
-              meta: {
-                argumentIndex: index,
-                argumentType: arg.type,
-              },
-              start: argStart,
-            });
+            continue;
           }
+
+          hasNonLiteralArg = true;
+          literalArgs.push(null);
+          const [argStart, argEnd] = getRange(arg);
+          errors.push({
+            end: argEnd,
+            message: `Argument at index ${index} of method import.meta.${methodPath}() is not a literal`,
+            meta: {
+              argumentIndex: index,
+              argumentType: arg.type,
+            },
+            start: argStart,
+          });
+        }
+        if (hasNonLiteralArg) {
+          return;
         }
 
         const [callStart, callEnd] = getRange(node);
