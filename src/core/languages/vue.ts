@@ -41,8 +41,6 @@ export async function createVueProcessor(): Promise<LanguageProcessor> {
 
       const allReplacements: TextReplacement[] = [];
       for (const block of scriptBlocks) {
-        if (!isNonEmptyString(block.content)) continue;
-
         const result = analyzeTypeScript(block.content, bindings);
         if (result.errors.length > 0) {
           for (const err of result.errors) {
@@ -74,10 +72,18 @@ export async function createVueProcessor(): Promise<LanguageProcessor> {
 
 function correctScriptBlocks(descriptor: SFCDescriptor): SFCScriptBlock[] {
   const blocks = [];
-  if (descriptor.script && !isNonEmptyString(descriptor.script.src)) {
+  if (
+    descriptor.script &&
+    !isNonEmptyString(descriptor.script.src) &&
+    isNonEmptyString(descriptor.script.content)
+  ) {
     blocks.push(descriptor.script);
   }
-  if (descriptor.scriptSetup && !isNonEmptyString(descriptor.scriptSetup.src)) {
+  if (
+    descriptor.scriptSetup &&
+    !isNonEmptyString(descriptor.scriptSetup.src) &&
+    isNonEmptyString(descriptor.scriptSetup.content)
+  ) {
     blocks.push(descriptor.scriptSetup);
   }
   return blocks;
