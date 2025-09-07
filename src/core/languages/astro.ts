@@ -1,5 +1,10 @@
-import type { Node, TagLikeNode } from "@astrojs/compiler/types";
+import type {
+  DiagnosticMessage,
+  Node,
+  TagLikeNode,
+} from "@astrojs/compiler/types";
 
+import { DiagnosticSeverity } from "@astrojs/compiler/types";
 import { walk } from "zimmerframe";
 
 import type { TransformerContext } from "../context";
@@ -38,6 +43,29 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
       const parseResult = await astro.parse(code, {
         position: true,
       });
+      const severeDiagnostics = extractSevereDiagnostics(
+        parseResult.diagnostics,
+      );
+      if (severeDiagnostics.error.length > 0) {
+        for (const err of severeDiagnostics.error) {
+          unCtx.logger.error({
+            id: unCtx.id,
+            message: err.text,
+            meta: err.location,
+          });
+        }
+        return null;
+      }
+      if (severeDiagnostics.warning.length > 0) {
+        for (const warn of severeDiagnostics.warning) {
+          unCtx.logger.warn({
+            id: unCtx.id,
+            message: warn.text,
+            meta: warn.location,
+          });
+        }
+        return null;
+      }
 
       const allReplacements: TextReplacement[] = [];
 
@@ -215,4 +243,26 @@ function handleTagNode(
   }
 
   return allReplacements;
+}
+
+interface SevereDiagnostics {
+  error: DiagnosticMessage[];
+  warning: DiagnosticMessage[];
+}
+
+function extractSevereDiagnostics(
+  diagnostics: DiagnosticMessage[],
+): SevereDiagnostics {
+  const severe: SevereDiagnostics = {
+    error: [],
+    warning: [],
+  };
+  for (const diag of diagnostics) {
+    if (diag.severity === DiagnosticSeverity.Warning) {
+      severe.warning.push(diag);
+    } else if (diag.severity === DiagnosticSeverity.Error) {
+      severe.error.push(diag);
+    }
+  }
+  return severe;
 }
