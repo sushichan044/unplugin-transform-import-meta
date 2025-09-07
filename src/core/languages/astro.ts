@@ -13,6 +13,7 @@ import type { LanguageProcessor } from "./types";
 
 import { tryImport } from "../../utils/import";
 import { analyzeTypeScript } from "../analyze";
+import { createReporter } from "../reporter";
 import { includesImportMeta } from "../utils";
 
 /**
@@ -40,6 +41,8 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
         return null;
       }
 
+      const reporter = createReporter(unCtx);
+
       const parseResult = await astro.parse(code, {
         position: true,
       });
@@ -48,21 +51,13 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
       );
       if (severeDiagnostics.error.length > 0) {
         for (const err of severeDiagnostics.error) {
-          unCtx.logger.error({
-            id: unCtx.id,
-            message: err.text,
-            meta: err.location,
-          });
+          reporter.error({ message: err.text, meta: err.location });
         }
         return null;
       }
       if (severeDiagnostics.warning.length > 0) {
         for (const warn of severeDiagnostics.warning) {
-          unCtx.logger.warn({
-            id: unCtx.id,
-            message: warn.text,
-            meta: warn.location,
-          });
+          reporter.warn({ message: warn.text, meta: warn.location });
         }
         return null;
       }
@@ -82,6 +77,9 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
             const s = node.position?.start?.offset ?? 0;
             const offset = s + 3; // 3: length of "---"
 
+            const { hasParserError } = reporter.reportAnalysis(result);
+            if (hasParserError) return;
+
             const adjustedReplacements = result.replacements.map(
               (replacement) => ({
                 ...replacement,
@@ -90,17 +88,6 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
               }),
             );
             allReplacements.push(...adjustedReplacements);
-
-            // log warnings with adjusted offsets
-            if (result.errors.length > 0) {
-              for (const err of result.errors) {
-                unCtx.logger.error({
-                  id: unCtx.id,
-                  message: err.message,
-                  meta: err.meta,
-                });
-              }
-            }
           },
 
           element: (node, c) => {
@@ -131,6 +118,9 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
               const result = analyzeTypeScript(node.value, bindings);
               const offset = node.position?.start?.offset ?? 0;
 
+              const { hasParserError } = reporter.reportAnalysis(result);
+              if (hasParserError) return;
+
               const adjustedReplacements = result.replacements.map(
                 (replacement) => ({
                   ...replacement,
@@ -139,16 +129,6 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
                 }),
               );
               allReplacements.push(...adjustedReplacements);
-
-              if (result.errors.length > 0) {
-                for (const err of result.errors) {
-                  unCtx.logger.error({
-                    id: unCtx.id,
-                    message: err.message,
-                    meta: err.meta,
-                  });
-                }
-              }
             }
           },
 
@@ -160,6 +140,9 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
             const s = node.position?.start?.offset ?? 0;
             const offset = s + 1; // 1: length of "{"
 
+            const { hasParserError } = reporter.reportAnalysis(result);
+            if (hasParserError) return;
+
             const adjustedReplacements = result.replacements.map(
               (replacement) => ({
                 ...replacement,
@@ -168,16 +151,6 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
               }),
             );
             allReplacements.push(...adjustedReplacements);
-
-            if (result.errors.length > 0) {
-              for (const err of result.errors) {
-                unCtx.logger.error({
-                  id: unCtx.id,
-                  message: err.message,
-                  meta: err.meta,
-                });
-              }
-            }
           },
         },
       );
@@ -201,6 +174,7 @@ function handleTagNode(
   bindings: ImportMetaBindings,
 ): TextReplacement[] {
   const allReplacements: TextReplacement[] = [];
+  const reporter = createReporter(ctx);
 
   for (const attr of node.attributes) {
     if (
@@ -212,7 +186,7 @@ function handleTagNode(
 
     if (attr.kind === "shorthand" || attr.kind === "spread") {
       // TODO: contribution is welcome
-      ctx.logger.warn(
+      reporter.warn(
         `<${node.name}>: Skipping unsupported attribute syntax: ${attr.kind} for "${attr.name}"`,
       );
       continue;
@@ -220,6 +194,8 @@ function handleTagNode(
 
     if (includesImportMeta(attr.value)) {
       const result = analyzeTypeScript(attr.value, bindings);
+      const { hasParserError } = reporter.reportAnalysis(result);
+      if (hasParserError) continue;
       const s = attr.position?.start?.offset ?? 0;
       const offset = s + attr.name.length + 2; // 2: length of "={"
 
@@ -229,16 +205,6 @@ function handleTagNode(
         start: replacement.start + offset,
       }));
       allReplacements.push(...adjustedReplacements);
-
-      if (result.errors.length > 0) {
-        for (const err of result.errors) {
-          ctx.logger.error({
-            id: ctx.id,
-            message: err.message,
-            meta: err.meta,
-          });
-        }
-      }
     }
   }
 

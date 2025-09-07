@@ -6,6 +6,7 @@ import type { LanguageProcessor } from "./types";
 import { tryImport } from "../../utils/import";
 import { isNonEmptyString } from "../../utils/string";
 import { analyzeTypeScript } from "../analyze";
+import { createReporter } from "../reporter";
 import { includesImportMeta } from "../utils";
 
 /**
@@ -30,6 +31,7 @@ export async function createVueProcessor(): Promise<LanguageProcessor> {
   return {
     transform(c, code, bindings) {
       if (!includesImportMeta(code)) return null;
+      const reporter = createReporter(c);
 
       const { descriptor, errors } = vue.parse(code, {
         filename: c.id,
@@ -37,11 +39,7 @@ export async function createVueProcessor(): Promise<LanguageProcessor> {
       });
       if (errors.length > 0) {
         for (const err of errors) {
-          c.logger.error({
-            id: c.id,
-            message: err.message,
-            meta: err,
-          });
+          reporter.error({ message: err.message, meta: err });
         }
         return null;
       }
@@ -52,15 +50,8 @@ export async function createVueProcessor(): Promise<LanguageProcessor> {
       const allReplacements: TextReplacement[] = [];
       for (const block of scriptBlocks) {
         const result = analyzeTypeScript(block.content, bindings);
-        if (result.errors.length > 0) {
-          for (const err of result.errors) {
-            c.logger.error({
-              id: c.id,
-              message: err.message,
-              meta: err.meta,
-            });
-          }
-        }
+        const { hasParserError } = reporter.reportAnalysis(result);
+        if (hasParserError) continue;
 
         const offset = block.loc.start.offset;
 

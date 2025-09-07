@@ -235,6 +235,7 @@ const mixed = import.meta.glob("literal", someVar, 123);
       expect(result).toMatchInlineSnapshot(`
         {
           "errors": [],
+          "parserDiagnostics": [],
           "replacements": [],
         }
       `);

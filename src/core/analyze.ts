@@ -1,6 +1,6 @@
 import type { MemberExpression, Node } from "@oxc-project/types";
 
-import oxc from "oxc-parser";
+import oxc, { type OxcError } from "oxc-parser";
 import { walk } from "zimmerframe";
 
 import type {
@@ -23,8 +23,19 @@ interface AnalysisError {
   start: number;
 }
 
-interface AnalysisResult {
+export type ParserSeverity = "advice" | "error" | "warning";
+
+export interface ParserDiagnostic {
+  end?: number;
+  message: string;
+  meta?: Record<string, unknown>;
+  severity: ParserSeverity;
+  start?: number;
+}
+
+export interface AnalysisResult {
   errors: AnalysisError[];
+  parserDiagnostics: ParserDiagnostic[];
   replacements: TextReplacement[];
 }
 
@@ -43,15 +54,35 @@ export function analyzeTypeScript(
   if (!includesImportMeta(code)) {
     return {
       errors: [],
+      parserDiagnostics: [],
       replacements: [],
     };
   }
 
-  const ast = parseProgram(code);
+  const parsed = oxc.parseSync("file.tsx", code, {
+    astType: "ts",
+    lang: "tsx",
+    preserveParens: true,
+    range: true,
+    sourceType: "module",
+  });
+
+  const parserDiagnostics = mapOxcErrors(parsed.errors);
+  const hasParserError = parserDiagnostics.some((d) => d.severity === "error");
+  if (hasParserError) {
+    // When parser reports an error, skip traversal and let processors handle it.
+    return {
+      errors: [],
+      parserDiagnostics,
+      replacements: [],
+    };
+  }
+
+  const ast = parsed.program;
   const replacements: TextReplacement[] = [];
   const errors: AnalysisError[] = [];
 
-  walk(
+  walk<Node, Record<string, never>>(
     ast,
     {},
     {
@@ -184,6 +215,7 @@ export function analyzeTypeScript(
 
   return {
     errors,
+    parserDiagnostics,
     replacements,
   };
 }
@@ -235,16 +267,23 @@ function findImportMetaPath(node: MemberExpression): string[] {
   return [];
 }
 
-function parseProgram(code: string): Node {
-  const ast = oxc.parseSync("file.tsx", code, {
-    astType: "ts",
-    lang: "tsx",
-    preserveParens: true,
-    range: true,
-    sourceType: "module",
+function mapOxcErrors(errors: OxcError[]): ParserDiagnostic[] {
+  return errors.map((e): ParserDiagnostic => {
+    const first = e.labels?.[0];
+    const sev = String((e as unknown as { severity: unknown }).severity);
+    return {
+      end: first?.end,
+      message: e.message,
+      meta: {
+        codeframe: e.codeframe,
+        helpMessage: e.helpMessage,
+        labels: e.labels,
+      },
+      severity:
+        sev === "Error" ? "error" : sev === "Warning" ? "warning" : "advice",
+      start: first?.start,
+    };
   });
-
-  return ast.program;
 }
 
 function getRange(node: Node): [number, number] {
