@@ -1,8 +1,8 @@
 <template>
-  <div>{{ import.meta.TPL_IGNORED }}</div>
+  <div>{{ a }}</div>
 </template>
 
-<script lang="js"">
+<script lang="js">
 const a = import.meta.SCRIPT_VALUE;
 const b = import.meta.fn("x", 1);
 const e = import.meta["SCRIPT_VALUE"]; // only transform dot-notation
