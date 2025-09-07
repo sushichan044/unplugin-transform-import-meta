@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.4
+
+### &nbsp;&nbsp;&nbsp;Bug Fixes
+
+- Throw error if user input non literal values &nbsp;-&nbsp; by **Kentaro Suzuki** in https://github.com/sushichan044/unplugin-transform-import-meta/issues/7 [<samp>(d2877)</samp>](https://github.com/sushichan044/unplugin-transform-import-meta/commit/d28774d)
+- Early return if non-literal arg is detected &nbsp;-&nbsp; by **Kentaro Suzuki** in https://github.com/sushichan044/unplugin-transform-import-meta/issues/8 [<samp>(4bd3b)</samp>](https://github.com/sushichan044/unplugin-transform-import-meta/commit/4bd3b25)
+
+##### &nbsp;&nbsp;&nbsp;&nbsp;[View changes on GitHub](https://github.com/sushichan044/unplugin-transform-import-meta/compare/0.0.3...0.0.4)
+
 ## 0.0.3
 
 ### &nbsp;&nbsp;&nbsp;Features
