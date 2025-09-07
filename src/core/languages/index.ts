@@ -4,8 +4,9 @@ import type { LanguageProcessor } from "./types";
 
 import { createAstroProcessor } from "./astro";
 import { createECMAScriptProcessor } from "./ecmascript";
+import { createVueProcessor } from "./vue";
 
-type SupportedLanguage = "astro" | "ecma";
+type SupportedLanguage = "astro" | "ecma" | "vue";
 
 /**
  * @package
@@ -14,11 +15,16 @@ export async function createProcessor(
   lang: SupportedLanguage,
 ): Promise<LanguageProcessor> {
   switch (lang) {
+    case "ecma": {
+      return createECMAScriptProcessor();
+    }
+
+    // eslint-disable-next-line perfectionist/sort-switch-case
     case "astro": {
       return await createAstroProcessor();
     }
-    case "ecma": {
-      return createECMAScriptProcessor();
+    case "vue": {
+      return await createVueProcessor();
     }
 
     default: {
@@ -53,11 +59,17 @@ export function detectLanguage(filename: string): SupportedLanguage | null {
     return "astro";
   }
 
+  // Not using regex for performance
+  if (cleanExt === ".vue") {
+    return "vue";
+  }
+
   return null;
 }
 
 export const REGEX_ECMA_LIKE = /\.[cm]?[jt]sx?$/;
 export const REGEX_ASTRO_LIKE = /\.astro$/;
+export const REGEX_VUE_LIKE = /\.vue$/;
 
 function isDtsLike(path: string): boolean {
   return REGEX_DTS_LIKE.test(path);
