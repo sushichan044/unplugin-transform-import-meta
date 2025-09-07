@@ -3,7 +3,7 @@ import type { FilterPattern } from "unplugin-utils";
 import type { NonReadOnly } from "../utils/types";
 import type { ImportMetaBindings } from "./types";
 
-import { REGEX_ASTRO_LIKE, REGEX_ECMA_LIKE } from "./languages";
+import { REGEX_ASTRO_LIKE, REGEX_ECMA_LIKE, REGEX_VUE_LIKE } from "./languages";
 
 /**
  * @package
@@ -42,6 +42,7 @@ export function resolveOptions(options: Options): OptionsResolved {
     include: (options.include as NonReadOnly<FilterPattern>) ?? [
       REGEX_ECMA_LIKE,
       REGEX_ASTRO_LIKE,
+      REGEX_VUE_LIKE,
     ],
   };
 }
