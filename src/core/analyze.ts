@@ -1,6 +1,7 @@
 import type { MemberExpression, Node } from "@oxc-project/types";
+import type { OxcError } from "oxc-parser";
 
-import oxc, { type OxcError } from "oxc-parser";
+import oxc from "oxc-parser";
 import { walk } from "zimmerframe";
 
 import type {
@@ -130,7 +131,8 @@ export function analyzeTypeScript(
         c.next();
 
         // Handle import.meta.method(...) calls.
-        // This should be after than args to allow like import.meta.method(import.meta.property).
+        // This should run after the args check to allow cases like
+        // import.meta.method(import.meta.property).
         // Check all args and abort traversal
         if (
           node.callee.type !== "MemberExpression" ||
@@ -268,9 +270,18 @@ function findImportMetaPath(node: MemberExpression): string[] {
 }
 
 function mapOxcErrors(errors: OxcError[]): ParserDiagnostic[] {
+  const toParserSeverity = (sev: unknown): ParserSeverity => {
+    // We cannot use Severity enum because we enabled isolateModules option
+    if (sev === "Error") return "error";
+    if (sev === "Warning") return "warning";
+    if (sev === "Advice") return "advice";
+
+    return "error";
+  };
+
   return errors.map((e): ParserDiagnostic => {
     const first = e.labels?.[0];
-    const sev = String((e as unknown as { severity: unknown }).severity);
+    const sevRaw = e.severity;
     return {
       end: first?.end,
       message: e.message,
@@ -279,8 +290,7 @@ function mapOxcErrors(errors: OxcError[]): ParserDiagnostic[] {
         helpMessage: e.helpMessage,
         labels: e.labels,
       },
-      severity:
-        sev === "Error" ? "error" : sev === "Warning" ? "warning" : "advice",
+      severity: toParserSeverity(sevRaw),
       start: first?.start,
     };
   });

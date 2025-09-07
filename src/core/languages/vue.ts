@@ -62,6 +62,7 @@ export async function createVueProcessor(): Promise<LanguageProcessor> {
         }));
         allReplacements.push(...adjustedReplacements);
       }
+      if (allReplacements.length === 0) return null;
 
       return {
         code: c.helpers.applyReplacements(code, allReplacements),

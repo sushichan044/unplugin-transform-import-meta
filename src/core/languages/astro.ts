@@ -7,7 +7,7 @@ import type {
 import { DiagnosticSeverity } from "@astrojs/compiler/types";
 import { walk } from "zimmerframe";
 
-import type { TransformerContext } from "../context";
+import type { Reporter } from "../reporter";
 import type { ImportMetaBindings, TextReplacement } from "../types";
 import type { LanguageProcessor } from "./types";
 
@@ -91,22 +91,22 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
           },
 
           element: (node, c) => {
-            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
+            allReplacements.push(...handleTagNode(reporter, node, bindings));
             c.next();
           },
 
           fragment: (node, c) => {
-            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
+            allReplacements.push(...handleTagNode(reporter, node, bindings));
             c.next();
           },
 
           component: (node, c) => {
-            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
+            allReplacements.push(...handleTagNode(reporter, node, bindings));
             c.next();
           },
 
           "custom-element": (node, c) => {
-            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
+            allReplacements.push(...handleTagNode(reporter, node, bindings));
             c.next();
           },
 
@@ -154,27 +154,24 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
           },
         },
       );
+      if (allReplacements.length === 0) return null;
 
       const transformed = unCtx.helpers.applyReplacements(
         code,
         allReplacements,
       );
 
-      return {
-        code: transformed,
-      };
+      return { code: transformed };
     },
   };
 }
 
 function handleTagNode(
-  ctx: TransformerContext,
-  code: string,
+  reporter: Reporter,
   node: TagLikeNode,
   bindings: ImportMetaBindings,
 ): TextReplacement[] {
   const allReplacements: TextReplacement[] = [];
-  const reporter = createReporter(ctx);
 
   for (const attr of node.attributes) {
     if (

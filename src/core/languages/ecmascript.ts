@@ -13,6 +13,7 @@ export function createECMAScriptProcessor(): LanguageProcessor {
       const result = analyzeTypeScript(code, bindings);
       const { hasParserError } = reporter.reportAnalysis(result);
       if (hasParserError) return null;
+      if (result.replacements.length === 0) return null;
 
       const transformed = c.helpers.applyReplacements(
         code,
