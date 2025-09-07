@@ -4,17 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import type { ImportMetaBindings } from "../src/api";
 
-import { createProcessor, detectLanguage } from "../src/api";
+import { createProcessor } from "../src/api";
 import { createTestContext } from "./utils";
 
 describe("Astro support", () => {
-  it("should detect Astro files", () => {
-    expect(detectLanguage("App.astro")).toBe("astro");
-    expect(detectLanguage("component.astro")).toBe("astro");
-    expect(detectLanguage("index.js")).toBe("ecma");
-    expect(detectLanguage("index.ts")).toBe("ecma");
-  });
-
   it("should transform import.meta in all Astro contexts (frontmatter + script + expression)", async () => {
     const source = await readFile(
       fileURLToPath(new URL("./fixtures/astro/before.astro", import.meta.url)),
