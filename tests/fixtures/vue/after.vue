@@ -2,7 +2,7 @@
   <div>{{ import.meta.TPL_IGNORED }}</div>
 </template>
 
-<script lang="ts">
+<script lang="js"">
 const a = "script";
 const b = "x:1";
 </script>
