@@ -39,8 +39,9 @@ export async function createVueProcessor(): Promise<LanguageProcessor> {
       });
       if (errors.length > 0) {
         for (const err of errors) {
-          reporter.error({ message: err.message, meta: err });
+          reporter.error(err);
         }
+        // abort processing on parse error
         return null;
       }
 

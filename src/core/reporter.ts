@@ -1,5 +1,3 @@
-import type { UnpluginContext } from "unplugin";
-
 import type { AnalysisResult, ParserDiagnostic } from "./analyze";
 import type { TransformerContext } from "./context";
 
@@ -17,25 +15,28 @@ export interface Reporter {
 
 export function createReporter(ctx: TransformerContext): Reporter {
   const emit = (kind: "error" | "warn", input: LogInput) => {
-    const fn: UnpluginContext["error"] | UnpluginContext["warn"] =
-      kind === "error" ? ctx.logger.error : ctx.logger.warn;
+    const log = kind === "error" ? ctx.logger.error : ctx.logger.warn;
 
     if (typeof input === "string") {
       // normalize to Rollup-like object with id
-      fn({ id: ctx.id, message: input });
+      log({ id: ctx.id, message: input });
       return;
     }
     if (input instanceof Error) {
-      fn({ id: ctx.id, message: input.message, meta: input });
+      log({ id: ctx.id, ...input });
       return;
     }
 
-    fn({ id: ctx.id, message: input.message, meta: input.meta });
+    log({ id: ctx.id, message: input.message, meta: input.meta });
   };
 
   const reportParser = (diags: ParserDiagnostic[]) => {
     let hasError = false;
-    for (const d of diags) {
+    const sortedDiags = [...diags].sort(
+      (a, b) => (a.start ?? -1) - (b.start ?? -1),
+    );
+
+    for (const d of sortedDiags) {
       if (d.severity === "error") hasError = true;
       emit(d.severity === "error" ? "error" : "warn", {
         message: d.message,
@@ -56,7 +57,7 @@ export function createReporter(ctx: TransformerContext): Reporter {
     reportAnalysis(result) {
       // Analyzer-level errors
       for (const err of result.errors) {
-        emit("error", { message: err.message, meta: err.meta });
+        emit("error", err);
       }
 
       // Parser diagnostics

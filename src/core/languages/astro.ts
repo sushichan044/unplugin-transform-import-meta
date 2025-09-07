@@ -53,13 +53,14 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
         for (const err of severeDiagnostics.error) {
           reporter.error({ message: err.text, meta: err.location });
         }
+        // abort processing on parse error
         return null;
       }
       if (severeDiagnostics.warning.length > 0) {
         for (const warn of severeDiagnostics.warning) {
           reporter.warn({ message: warn.text, meta: warn.location });
         }
-        return null;
+        // continue processing even if there are warnings
       }
 
       const allReplacements: TextReplacement[] = [];
@@ -183,10 +184,10 @@ function handleTagNode(
 
     if (attr.kind === "shorthand" || attr.kind === "spread") {
       // TODO: contribution is welcome
-      reporter.warn(
-        `<${node.name}>: Skipping unsupported attribute syntax: ${attr.kind} for "${attr.name}"`,
-      );
-      continue;
+      reporter.warn({
+        message: `<${node.name}>: Skipping unsupported attribute syntax: ${attr.kind} for "${attr.name}"`,
+        meta: attr.position,
+      });
     }
 
     if (includesImportMeta(attr.value)) {

@@ -246,6 +246,7 @@ const mixed = import.meta.glob("literal", someVar, 123);
         true,
       );
       expect(result.replacements).toHaveLength(0);
+      expect(result.errors).toHaveLength(0);
     });
   });
 });
