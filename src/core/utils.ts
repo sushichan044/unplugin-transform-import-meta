@@ -9,9 +9,17 @@ export function applyReplacements(
   source: string,
   replacements: TextReplacement[],
 ): string {
+  if (replacements.length === 0) {
+    return source;
+  }
+
+  const stableReplacements = replacements
+    .slice()
+    .sort((a, b) => a.start - b.start);
+
   const magicString = new MagicString(source);
 
-  for (const { end, replacement, start } of replacements) {
+  for (const { end, replacement, start } of stableReplacements) {
     magicString.overwrite(start, end, replacement);
   }
 
