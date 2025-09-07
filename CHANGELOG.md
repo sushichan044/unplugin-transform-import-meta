@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.5
+
+### &nbsp;&nbsp;&nbsp;Features
+
+- Support processing vue script block &nbsp;-&nbsp; by **Kentaro Suzuki** in https://github.com/sushichan044/unplugin-transform-import-meta/issues/11 [<samp>(16d33)</samp>](https://github.com/sushichan044/unplugin-transform-import-meta/commit/16d3323)
+
+### &nbsp;&nbsp;&nbsp;Bug Fixes
+
+- Handle import with trailing query &nbsp;-&nbsp; by **Kentaro Suzuki** in https://github.com/sushichan044/unplugin-transform-import-meta/issues/12 [<samp>(c1f6e)</samp>](https://github.com/sushichan044/unplugin-transform-import-meta/commit/c1f6e29)
+
+##### &nbsp;&nbsp;&nbsp;&nbsp;[View changes on GitHub](https://github.com/sushichan044/unplugin-transform-import-meta/compare/0.0.4...0.0.5)
+
 ## 0.0.4
 
 ### &nbsp;&nbsp;&nbsp;Bug Fixes
