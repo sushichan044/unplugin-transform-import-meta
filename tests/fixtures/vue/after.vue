@@ -3,11 +3,11 @@
 </template>
 
 <script lang="ts">
-const a = "script"
-const b = "x:1"
+const a = "script";
+const b = "x:1";
 </script>
 
 <script setup lang="ts">
-const c = "setup"
-const d = "y:2"
+const c = "setup";
+const d = "y:2";
 </script>
