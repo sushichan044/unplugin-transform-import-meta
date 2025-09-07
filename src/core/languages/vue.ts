@@ -31,10 +31,20 @@ export async function createVueProcessor(): Promise<LanguageProcessor> {
     transform(c, code, bindings) {
       if (!includesImportMeta(code)) return null;
 
-      const { descriptor } = vue.parse(code, {
+      const { descriptor, errors } = vue.parse(code, {
         filename: c.id,
         sourceMap: false,
       });
+      if (errors.length > 0) {
+        for (const err of errors) {
+          c.logger.error({
+            id: c.id,
+            message: err.message,
+            meta: err,
+          });
+        }
+        return null;
+      }
 
       const scriptBlocks = correctScriptBlocks(descriptor);
       if (scriptBlocks.length === 0) return null;
