@@ -4,3 +4,4 @@ export { resolveOptions } from "./options";
 export type { Options, OptionsResolved } from "./options";
 export { createReservedAssertion } from "./reserved";
 export type { ImportMetaBindings } from "./types";
+export { isLiteralValue } from "./utils";
