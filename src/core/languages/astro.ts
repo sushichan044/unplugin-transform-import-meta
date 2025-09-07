@@ -1,13 +1,19 @@
-import type { Node, TagLikeNode } from "@astrojs/compiler/types";
+import type {
+  DiagnosticMessage,
+  Node,
+  TagLikeNode,
+} from "@astrojs/compiler/types";
 
+import { DiagnosticSeverity } from "@astrojs/compiler/types";
 import { walk } from "zimmerframe";
 
-import type { TransformerContext } from "../context";
+import type { Reporter } from "../reporter";
 import type { ImportMetaBindings, TextReplacement } from "../types";
 import type { LanguageProcessor } from "./types";
 
 import { tryImport } from "../../utils/import";
 import { analyzeTypeScript } from "../analyze";
+import { createReporter } from "../reporter";
 import { includesImportMeta } from "../utils";
 
 /**
@@ -35,9 +41,27 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
         return null;
       }
 
+      const reporter = createReporter(unCtx);
+
       const parseResult = await astro.parse(code, {
         position: true,
       });
+      const severeDiagnostics = extractSevereDiagnostics(
+        parseResult.diagnostics,
+      );
+      if (severeDiagnostics.error.length > 0) {
+        for (const err of severeDiagnostics.error) {
+          reporter.error({ message: err.text, meta: err.location });
+        }
+        // abort processing on parse error
+        return null;
+      }
+      if (severeDiagnostics.warning.length > 0) {
+        for (const warn of severeDiagnostics.warning) {
+          reporter.warn({ message: warn.text, meta: warn.location });
+        }
+        // continue processing even if there are warnings
+      }
 
       const allReplacements: TextReplacement[] = [];
 
@@ -54,6 +78,9 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
             const s = node.position?.start?.offset ?? 0;
             const offset = s + 3; // 3: length of "---"
 
+            const { hasParserError } = reporter.reportAnalysis(result);
+            if (hasParserError) return;
+
             const adjustedReplacements = result.replacements.map(
               (replacement) => ({
                 ...replacement,
@@ -62,36 +89,25 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
               }),
             );
             allReplacements.push(...adjustedReplacements);
-
-            // log warnings with adjusted offsets
-            if (result.errors.length > 0) {
-              for (const err of result.errors) {
-                unCtx.logger.error({
-                  id: unCtx.id,
-                  message: err.message,
-                  meta: err.meta,
-                });
-              }
-            }
           },
 
           element: (node, c) => {
-            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
+            allReplacements.push(...handleTagNode(reporter, node, bindings));
             c.next();
           },
 
           fragment: (node, c) => {
-            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
+            allReplacements.push(...handleTagNode(reporter, node, bindings));
             c.next();
           },
 
           component: (node, c) => {
-            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
+            allReplacements.push(...handleTagNode(reporter, node, bindings));
             c.next();
           },
 
           "custom-element": (node, c) => {
-            allReplacements.push(...handleTagNode(unCtx, code, node, bindings));
+            allReplacements.push(...handleTagNode(reporter, node, bindings));
             c.next();
           },
 
@@ -103,6 +119,9 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
               const result = analyzeTypeScript(node.value, bindings);
               const offset = node.position?.start?.offset ?? 0;
 
+              const { hasParserError } = reporter.reportAnalysis(result);
+              if (hasParserError) return;
+
               const adjustedReplacements = result.replacements.map(
                 (replacement) => ({
                   ...replacement,
@@ -111,16 +130,6 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
                 }),
               );
               allReplacements.push(...adjustedReplacements);
-
-              if (result.errors.length > 0) {
-                for (const err of result.errors) {
-                  unCtx.logger.error({
-                    id: unCtx.id,
-                    message: err.message,
-                    meta: err.meta,
-                  });
-                }
-              }
             }
           },
 
@@ -132,6 +141,9 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
             const s = node.position?.start?.offset ?? 0;
             const offset = s + 1; // 1: length of "{"
 
+            const { hasParserError } = reporter.reportAnalysis(result);
+            if (hasParserError) return;
+
             const adjustedReplacements = result.replacements.map(
               (replacement) => ({
                 ...replacement,
@@ -140,35 +152,23 @@ export async function createAstroProcessor(): Promise<LanguageProcessor> {
               }),
             );
             allReplacements.push(...adjustedReplacements);
-
-            if (result.errors.length > 0) {
-              for (const err of result.errors) {
-                unCtx.logger.error({
-                  id: unCtx.id,
-                  message: err.message,
-                  meta: err.meta,
-                });
-              }
-            }
           },
         },
       );
+      if (allReplacements.length === 0) return null;
 
       const transformed = unCtx.helpers.applyReplacements(
         code,
         allReplacements,
       );
 
-      return {
-        code: transformed,
-      };
+      return { code: transformed };
     },
   };
 }
 
 function handleTagNode(
-  ctx: TransformerContext,
-  code: string,
+  reporter: Reporter,
   node: TagLikeNode,
   bindings: ImportMetaBindings,
 ): TextReplacement[] {
@@ -184,14 +184,16 @@ function handleTagNode(
 
     if (attr.kind === "shorthand" || attr.kind === "spread") {
       // TODO: contribution is welcome
-      ctx.logger.warn(
-        `<${node.name}>: Skipping unsupported attribute syntax: ${attr.kind} for "${attr.name}"`,
-      );
-      continue;
+      reporter.warn({
+        message: `<${node.name}>: Skipping unsupported attribute syntax: ${attr.kind} for "${attr.name}"`,
+        meta: attr.position,
+      });
     }
 
     if (includesImportMeta(attr.value)) {
       const result = analyzeTypeScript(attr.value, bindings);
+      const { hasParserError } = reporter.reportAnalysis(result);
+      if (hasParserError) continue;
       const s = attr.position?.start?.offset ?? 0;
       const offset = s + attr.name.length + 2; // 2: length of "={"
 
@@ -201,18 +203,30 @@ function handleTagNode(
         start: replacement.start + offset,
       }));
       allReplacements.push(...adjustedReplacements);
-
-      if (result.errors.length > 0) {
-        for (const err of result.errors) {
-          ctx.logger.error({
-            id: ctx.id,
-            message: err.message,
-            meta: err.meta,
-          });
-        }
-      }
     }
   }
 
   return allReplacements;
+}
+
+interface SevereDiagnostics {
+  error: DiagnosticMessage[];
+  warning: DiagnosticMessage[];
+}
+
+function extractSevereDiagnostics(
+  diagnostics: DiagnosticMessage[],
+): SevereDiagnostics {
+  const severe: SevereDiagnostics = {
+    error: [],
+    warning: [],
+  };
+  for (const diag of diagnostics) {
+    if (diag.severity === DiagnosticSeverity.Warning) {
+      severe.warning.push(diag);
+    } else if (diag.severity === DiagnosticSeverity.Error) {
+      severe.error.push(diag);
+    }
+  }
+  return severe;
 }

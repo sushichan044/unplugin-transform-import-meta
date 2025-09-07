@@ -221,7 +221,7 @@ const mixed = import.meta.glob("literal", someVar, 123);
     });
 
     it("should handle non-MemberExpression callees", () => {
-      const code = "const result = someFunction('./test');";
+      const code = "const result = resolve('./test');";
       const ImportMetaBindings: ImportMetaBindings = {
         functions: {
           resolve: (path: bigint | boolean | number | string | RegExp | null) =>
@@ -231,13 +231,22 @@ const mixed = import.meta.glob("literal", someVar, 123);
       };
 
       const result = analyzeTypeScript(code, ImportMetaBindings);
+      expect(result.replacements).toHaveLength(0);
+    });
 
-      expect(result).toMatchInlineSnapshot(`
-        {
-          "errors": [],
-          "replacements": [],
-        }
-      `);
+    it("should skip traversal on syntax error if surfaced any parser errors", () => {
+      const code = "const x = ; const y = import.meta.foo;";
+      const result = analyzeTypeScript(code, {
+        functions: {},
+        values: {
+          foo: true,
+        },
+      });
+      expect(result.parserDiagnostics.some((d) => d.severity === "error")).toBe(
+        true,
+      );
+      expect(result.replacements).toHaveLength(0);
+      expect(result.errors).toHaveLength(0);
     });
   });
 });

@@ -1,6 +1,7 @@
 import type { LanguageProcessor } from "./types";
 
 import { analyzeTypeScript } from "../analyze";
+import { createReporter } from "../reporter";
 
 /**
  * @package
@@ -8,16 +9,11 @@ import { analyzeTypeScript } from "../analyze";
 export function createECMAScriptProcessor(): LanguageProcessor {
   return {
     transform(c, code, bindings) {
+      const reporter = createReporter(c);
       const result = analyzeTypeScript(code, bindings);
-      if (result.errors.length > 0) {
-        for (const err of result.errors) {
-          c.logger.error({
-            id: c.id,
-            message: err.message,
-            meta: err.meta,
-          });
-        }
-      }
+      const { hasParserError } = reporter.reportAnalysis(result);
+      if (hasParserError) return null;
+      if (result.replacements.length === 0) return null;
 
       const transformed = c.helpers.applyReplacements(
         code,

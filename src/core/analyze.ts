@@ -1,4 +1,5 @@
 import type { MemberExpression, Node } from "@oxc-project/types";
+import type { OxcError } from "oxc-parser";
 
 import oxc from "oxc-parser";
 import { walk } from "zimmerframe";
@@ -23,8 +24,19 @@ interface AnalysisError {
   start: number;
 }
 
-interface AnalysisResult {
+export type ParserSeverity = "advice" | "error" | "warning";
+
+export interface ParserDiagnostic {
+  end?: number;
+  message: string;
+  meta?: Record<string, unknown>;
+  severity: ParserSeverity;
+  start?: number;
+}
+
+export interface AnalysisResult {
   errors: AnalysisError[];
+  parserDiagnostics: ParserDiagnostic[];
   replacements: TextReplacement[];
 }
 
@@ -43,15 +55,35 @@ export function analyzeTypeScript(
   if (!includesImportMeta(code)) {
     return {
       errors: [],
+      parserDiagnostics: [],
       replacements: [],
     };
   }
 
-  const ast = parseProgram(code);
+  const parsed = oxc.parseSync("file.tsx", code, {
+    astType: "ts",
+    lang: "tsx",
+    preserveParens: true,
+    range: true,
+    sourceType: "module",
+  });
+
+  const parserDiagnostics = mapOxcErrors(parsed.errors);
+  const hasParserError = parserDiagnostics.some((d) => d.severity === "error");
+  if (hasParserError) {
+    // When parser reports an error, skip traversal and let processors handle it.
+    return {
+      errors: [],
+      parserDiagnostics,
+      replacements: [],
+    };
+  }
+
+  const ast = parsed.program;
   const replacements: TextReplacement[] = [];
   const errors: AnalysisError[] = [];
 
-  walk(
+  walk<Node, Record<string, never>>(
     ast,
     {},
     {
@@ -99,7 +131,8 @@ export function analyzeTypeScript(
         c.next();
 
         // Handle import.meta.method(...) calls.
-        // This should be after than args to allow like import.meta.method(import.meta.property).
+        // This should run after the args check to allow cases like
+        // import.meta.method(import.meta.property).
         // Check all args and abort traversal
         if (
           node.callee.type !== "MemberExpression" ||
@@ -184,6 +217,7 @@ export function analyzeTypeScript(
 
   return {
     errors,
+    parserDiagnostics,
     replacements,
   };
 }
@@ -235,16 +269,31 @@ function findImportMetaPath(node: MemberExpression): string[] {
   return [];
 }
 
-function parseProgram(code: string): Node {
-  const ast = oxc.parseSync("file.tsx", code, {
-    astType: "ts",
-    lang: "tsx",
-    preserveParens: true,
-    range: true,
-    sourceType: "module",
-  });
+function mapOxcErrors(errors: OxcError[]): ParserDiagnostic[] {
+  const toParserSeverity = (sev: unknown): ParserSeverity => {
+    // We cannot use Severity enum because we enabled isolateModules option
+    if (sev === "Error") return "error";
+    if (sev === "Warning") return "warning";
+    if (sev === "Advice") return "advice";
 
-  return ast.program;
+    return "error";
+  };
+
+  return errors.map((e): ParserDiagnostic => {
+    const first = e.labels?.[0];
+    const sevRaw = e.severity;
+    return {
+      end: first?.end,
+      message: e.message,
+      meta: {
+        codeframe: e.codeframe,
+        helpMessage: e.helpMessage,
+        labels: e.labels,
+      },
+      severity: toParserSeverity(sevRaw),
+      start: first?.start,
+    };
+  });
 }
 
 function getRange(node: Node): [number, number] {
