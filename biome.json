@@ -41,6 +41,10 @@
     {
       "includes": ["*.json", "*.json5", "*.jsonc"],
       "javascript": { "formatter": { "trailingCommas": "none" } }
+    },
+    {
+      "includes": ["**/*.svelte", "**/*.vue", "**/*.astro"],
+      "formatter": { "enabled": false }
     }
   ]
 }
