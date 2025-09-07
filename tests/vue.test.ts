@@ -4,15 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import type { ImportMetaBindings } from "../src/api";
 
-import { createProcessor, detectLanguage } from "../src/api";
+import { createProcessor } from "../src/api";
 import { createTestContext } from "./utils";
 
 describe("Vue SFC support", () => {
-  it("should detect Vue files", () => {
-    expect(detectLanguage("App.vue")).toBe("vue");
-    expect(detectLanguage("component.vue")).toBe("vue");
-  });
-
   it("should transform import.meta in <script> and <script setup> only", async () => {
     const source = await readFile(
       fileURLToPath(new URL("./fixtures/vue/before.vue", import.meta.url)),

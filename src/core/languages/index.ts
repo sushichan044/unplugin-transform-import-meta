@@ -54,22 +54,20 @@ export function detectLanguage(filename: string): SupportedLanguage | null {
     return "ecma";
   }
 
-  // Not using regex for performance
-  if (cleanExt === ".astro") {
+  if (REGEX_ASTRO_LIKE.test(cleanExt)) {
     return "astro";
   }
 
-  // Not using regex for performance
-  if (cleanExt === ".vue") {
+  if (REGEX_VUE_LIKE.test(cleanExt)) {
     return "vue";
   }
 
   return null;
 }
 
-export const REGEX_ECMA_LIKE = /\.[cm]?[jt]sx?$/;
-export const REGEX_ASTRO_LIKE = /\.astro$/;
-export const REGEX_VUE_LIKE = /\.vue$/;
+export const REGEX_ECMA_LIKE = /\.[cm]?[jt]sx?(\?.*)?$/;
+export const REGEX_ASTRO_LIKE = /\.astro(\?.*)?$/;
+export const REGEX_VUE_LIKE = /\.vue(\?.*)?$/;
 
 function isDtsLike(path: string): boolean {
   return REGEX_DTS_LIKE.test(path);
