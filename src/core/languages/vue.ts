@@ -52,8 +52,7 @@ export async function createVueProcessor(): Promise<LanguageProcessor> {
           }
         }
 
-        const s = block.loc.start.offset;
-        const offset = s;
+        const offset = block.loc.start.offset;
 
         const adjustedReplacements = result.replacements.map((replacement) => ({
           ...replacement,
@@ -71,7 +70,7 @@ export async function createVueProcessor(): Promise<LanguageProcessor> {
 }
 
 function correctScriptBlocks(descriptor: SFCDescriptor): SFCScriptBlock[] {
-  const blocks = [];
+  const blocks: SFCScriptBlock[] = [];
   if (
     descriptor.script &&
     !isNonEmptyString(descriptor.script.src) &&
