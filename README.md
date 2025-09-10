@@ -39,9 +39,12 @@ npm i -D unplugin-transform-import-meta
     ```bash
     npm i -D @astrojs/compiler
     ```
+- [x] Vue: `.vue`
+  - Only statements in `<script>` and `<script setup>` is processed.
+  - **Statements in `<template>` is not processed**.
 
-- [ ] Vue / Svelte: not yet supported. Contributions welcome!
-  - See #3 / #4 for details.
+- [ ] Svelte: not yet supported. Contributions welcome!
+  - See #4 for details.
 
 ## Quick Start
 
