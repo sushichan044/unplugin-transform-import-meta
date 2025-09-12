@@ -6,7 +6,11 @@ import { walk } from "zimmerframe";
 
 import type { LiteralValue } from "./types";
 
-import { serializeLiteralValue } from "./utils";
+import {
+  isSerializableValue,
+  serializeLiteralValue,
+  serializeValue,
+} from "./utils";
 
 describe("serializeLiteralValue", () => {
   describe("JSON primitive serialization", () => {
@@ -116,5 +120,90 @@ describe("serializeLiteralValue", () => {
         serializeLiteralValue(value as unknown as LiteralValue),
       ).toThrow(TypeError);
     });
+  });
+});
+
+describe("serializeValue (JS)", () => {
+  it("should serialize arrays recursively", () => {
+    const value = [1, "a", true, /re/];
+    const code = serializeValue(value);
+    expect(code).toBe('[1, "a", true, /re/]');
+  });
+
+  it("should serialize plain objects recursively", () => {
+    const value = {
+      api: {
+        baseUrl: "/api",
+        headers: {
+          Accept: "application/json",
+        },
+        retry: 3n,
+      },
+    };
+    const code = serializeValue(value);
+    expect(code).toMatchInlineSnapshot(
+      `"{ api: { baseUrl: "/api", headers: { Accept: "application/json" }, retry: 3n } }"`,
+    );
+  });
+
+  it("should serialize function values with PURE wrapper", () => {
+    const fn = (x: LiteralValue) => x;
+    const code = serializeValue(fn);
+
+    expect(code).toMatchInlineSnapshot(`"(/*#__PURE__*/((x) => x))"`);
+  });
+
+  it("should serialize async function values with PURE wrapper", () => {
+    // eslint-disable-next-line @typescript-eslint/require-await
+    const afn = async (x: LiteralValue) => x;
+    const code = serializeValue(afn);
+
+    expect(code).toMatchInlineSnapshot(`"(/*#__PURE__*/(async (x) => x))"`);
+  });
+
+  it("should throw on non-plain objects and unsupported instances", () => {
+    class X {}
+    const cases = [new Date(), new Map(), new Set(), new X()];
+    for (const v of cases) {
+      expect(() => serializeValue(v as unknown as LiteralValue)).toThrow(
+        TypeError,
+      );
+    }
+  });
+});
+
+describe("isSerializableValue", () => {
+  it.each([
+    null,
+    1,
+    "x",
+    true,
+    false,
+    /re/,
+    1n,
+    [1, 2, "a", null, true, /re/, 3n],
+    { a: 1, b: "x", c: null, d: [1, 2], e: { f: false } },
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    function () {},
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    async function () {},
+  ])("should accept %s", (value) => {
+    expect(isSerializableValue(value)).toBe(true);
+  });
+
+  it.each([
+    new Date(),
+    new Map(),
+    new Set(),
+    undefined,
+    NaN,
+    Infinity,
+    -Infinity,
+    Symbol("symbol"),
+    class X {
+      constructor() {}
+    },
+  ])("should reject %s", (value) => {
+    expect(isSerializableValue(value)).toBe(false);
   });
 });

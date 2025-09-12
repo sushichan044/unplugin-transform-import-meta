@@ -7,14 +7,15 @@ import { walk } from "zimmerframe";
 import type {
   ImportMetaBindings,
   LiteralValue,
+  NormalizedImportMetaBindings,
   TextReplacement,
 } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
 import {
   includesImportMeta,
-  isLiteralValue,
-  serializeLiteralValue,
+  isSerializableValue,
+  serializeValue,
 } from "./utils";
 
 interface AnalysisError {
@@ -50,7 +51,7 @@ export interface AnalysisResult {
  */
 export function analyzeTypeScript(
   code: string,
-  bindings: ImportMetaBindings,
+  bindings: NormalizedImportMetaBindings,
 ): AnalysisResult {
   if (!includesImportMeta(code)) {
     return {
@@ -97,18 +98,15 @@ export function analyzeTypeScript(
         const accessPath = getAccessPath(node);
         const [start, end] = getRange(node);
 
-        if (
-          !isNonEmptyString(accessPath) ||
-          bindings.values?.[accessPath] == null
-        ) {
+        if (!isNonEmptyString(accessPath) || bindings[accessPath] == null) {
           return;
         }
 
-        const value = bindings.values[accessPath];
-        if (!isLiteralValue(value)) {
+        const value = bindings[accessPath];
+        if (!isSerializableValue(value)) {
           errors.push({
             end,
-            message: `Value for import.meta.${accessPath} is not a valid literal`,
+            message: `Value for import.meta.${accessPath} is not serializable`,
             meta: {
               accessPath,
               valueType: typeof value,
@@ -118,7 +116,7 @@ export function analyzeTypeScript(
           return;
         }
 
-        const replacement = serializeLiteralValue(value);
+        const replacement = serializeValue(value);
         replacements.push({
           end,
           replacement,
@@ -142,10 +140,7 @@ export function analyzeTypeScript(
         }
 
         const methodPath = getAccessPath(node.callee);
-        if (
-          !isNonEmptyString(methodPath) ||
-          bindings.functions?.[methodPath] == null
-        ) {
+        if (!isNonEmptyString(methodPath) || bindings[methodPath] == null) {
           return;
         }
 
@@ -177,12 +172,12 @@ export function analyzeTypeScript(
         const [callStart, callEnd] = getRange(node);
 
         try {
-          const value = bindings.functions[methodPath](...literalArgs);
+          const value = bindings[methodPath](...literalArgs);
 
-          if (!isLiteralValue(value)) {
+          if (!isSerializableValue(value)) {
             errors.push({
               end: callEnd,
-              message: `Return value of method import.meta.${methodPath}() is not a valid literal`,
+              message: `Return value of method import.meta.${methodPath}() is not serializable`,
               meta: {
                 method: methodPath,
                 returnValue: value,
@@ -192,7 +187,7 @@ export function analyzeTypeScript(
             return;
           }
 
-          const replacement = serializeLiteralValue(value);
+          const replacement = serializeValue(value);
           replacements.push({
             end: callEnd,
             replacement,

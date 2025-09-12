@@ -1,12 +1,27 @@
+import type { Awaitable } from "../utils/types";
+
 /**
  * @package
  */
 export type LiteralValue = bigint | boolean | number | string | RegExp | null;
 
+type SerializableFunction = (
+  ...args: readonly LiteralValue[]
+) => Awaitable<LiteralValue>;
+
 /**
- * @package
+ * Serializable values allowed to be inlined as JavaScript code.
  */
-export type MethodFunction = (...args: LiteralValue[]) => LiteralValue;
+type SerializableValue =
+  | LiteralValue
+  | SerializableFunction
+  | readonly LiteralValue[];
+
+export type InfiniteSerializableValue =
+  | SerializableValue
+  | {
+      readonly [key: string]: InfiniteSerializableValue;
+    };
 
 /**
  * @package
@@ -57,9 +72,27 @@ export interface TextReplacement {
  * //   console.log('/resolved/a/b')
  * ```
  */
-export interface ImportMetaBindings {
-  /** Dotted access path → function (e.g. "resolve", "utils.resolve"). */
-  functions: Record<string, MethodFunction>;
-  /** Dotted access path → literal value (e.g. "env", "config.database.host"). */
-  values: Record<string, LiteralValue>;
-}
+export type ImportMetaBindings = {
+  readonly [key: string]: InfiniteSerializableValue;
+};
+
+type BindingValueDefinition = {
+  type: "value";
+  value: LiteralValue | readonly LiteralValue[];
+};
+
+type BindingFunctionDefinition = {
+  type: "function";
+  value: SerializableFunction;
+};
+
+export type BindingDefinition =
+  | BindingFunctionDefinition
+  | BindingValueDefinition;
+
+/**
+ * @internal
+ */
+export type NormalizedImportMetaBindings = {
+  readonly [key: string]: BindingFunctionDefinition | BindingValueDefinition;
+};

@@ -249,4 +249,65 @@ const mixed = import.meta.glob("literal", someVar, 123);
       expect(result.errors).toHaveLength(0);
     });
   });
+
+  describe("Serializable values (arrays/objects/functions)", () => {
+    it("should inline object-of-import-thunks like Vite glob output", () => {
+      const code = "const modules = import.meta.modules;";
+      const bindings: ImportMetaBindings = {
+        functions: {},
+        values: {
+          modules: {
+            // @ts-expect-error dummy for test
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+            "./dir/bar.js": async () => await import("./dir/bar.js"),
+            // @ts-expect-error dummy for test
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+            "./dir/foo.js": async () => import("./dir/foo.js"),
+          },
+        },
+      };
+
+      const result = analyzeTypeScript(code, bindings);
+      expect(result.replacements).toHaveLength(1);
+      const transformed = applyReplacements(code, result.replacements);
+      // TODO: investigate this
+      // Note: Vitest/Vite rewrites dynamic import() to __vite_ssr_dynamic_import__ in test env.
+      expect(transformed).toMatchInlineSnapshot(
+        '"const modules = { \"./dir/bar.js\": (/*#__PURE__*/(async () => await __vite_ssr_dynamic_import__(\"./dir/bar.js\"))), \"./dir/foo.js\": (/*#__PURE__*/(async () => __vite_ssr_dynamic_import__(\"./dir/foo.js\"))) };"',
+      );
+    });
+
+    it("should inline function value (sync) and allow call via variable", () => {
+      const code = "const fn = import.meta.fn; console.log(fn('x'));";
+      const bindings: ImportMetaBindings = {
+        functions: {},
+        values: {
+          fn: (x) => `hello:${x}`,
+        },
+      };
+      const result = analyzeTypeScript(code, bindings);
+      expect(result.replacements).toHaveLength(1);
+      const transformed = applyReplacements(code, result.replacements);
+      expect(transformed).toMatchInlineSnapshot(
+        "\"const fn = (/*#__PURE__*/((x) => `hello:${x}`)); console.log(fn('x'));\"",
+      );
+    });
+
+    it("should inline async function value", () => {
+      const code = "const afn = import.meta.afn;";
+      const bindings: ImportMetaBindings = {
+        functions: {},
+        values: {
+          // eslint-disable-next-line @typescript-eslint/require-await
+          afn: async (x) => x,
+        },
+      };
+      const result = analyzeTypeScript(code, bindings);
+      expect(result.replacements).toHaveLength(1);
+      const transformed = applyReplacements(code, result.replacements);
+      expect(transformed).toMatchInlineSnapshot(
+        '"const afn = (/*#__PURE__*/(async (x) => x));"',
+      );
+    });
+  });
 });
