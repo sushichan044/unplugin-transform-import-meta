@@ -2,9 +2,9 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import type { ImportMetaBindings } from "../src/api";
+import type { UserImportMetaBindings } from "../src/api";
 
-import { createProcessor } from "../src/api";
+import { createProcessor, resolveOptions } from "../src/api";
 import { createTestContext } from "./utils";
 
 describe("Astro support", () => {
@@ -14,11 +14,11 @@ describe("Astro support", () => {
       "utf-8",
     );
 
-    const bindings: ImportMetaBindings = {
-      functions: {
+    const bindings: UserImportMetaBindings = {
+      build: {
         glob: (...args) => args.join(","),
       },
-      values: {
+      define: {
         "env.MODE": "build",
         "env.NODE_ENV": "production",
         "env.RELEASED": true,
@@ -28,10 +28,11 @@ describe("Astro support", () => {
     };
 
     const processor = await createProcessor("astro");
+    const resolved = resolveOptions({ bindings });
     const result = await processor.transform(
       createTestContext("before.astro"),
       source,
-      bindings,
+      resolved.bindings,
     );
 
     await expect(result?.code).toMatchFileSnapshot(

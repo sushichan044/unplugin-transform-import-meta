@@ -2,7 +2,7 @@ import { rollupBuild, testFixtures } from "@sxzz/test-utils";
 import path from "node:path";
 import { describe } from "vitest";
 
-import type { ImportMetaBindings } from "../src/api";
+import type { UserImportMetaBindings } from "../src/api";
 
 import unpluginResolveImportMeta from "../src/rollup";
 
@@ -12,17 +12,17 @@ describe("rollup", async () => {
     "*.js",
     async (_args, id) => {
       const bindings = {
-        functions: {
+        build: {
           bar: () => "method-result",
           getVersion: (...args) => `v${args[0]}`,
           resolveSomething: (...args) => `resolved-${args[0]}`,
         },
-        values: {
+        define: {
           environment: "production",
           foo: "resolved-foo",
           NODE_ENV: "test",
         },
-      } satisfies ImportMetaBindings;
+      } satisfies UserImportMetaBindings;
 
       const { snapshot } = await rollupBuild(id, [
         unpluginResolveImportMeta({ bindings }),

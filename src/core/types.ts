@@ -1,12 +1,92 @@
 /**
  * @package
  */
-export type LiteralValue = bigint | boolean | number | string | RegExp | null;
+export type LiteralValue = bigint | JSONPrimitive | RegExp;
 
 /**
  * @package
  */
-export type MethodFunction = (...args: LiteralValue[]) => LiteralValue;
+export type JSONPrimitive = boolean | number | string | null;
+
+/**
+ * Values that can be serialized into JavaScript source code for inlining.
+ *
+ * Functions inside {@link SerializableValue} are emitted verbatim via
+ * `Function#toString()` and therefore must be side-effect free.
+ *
+ * @package
+ */
+export type SerializableValue =
+  | LiteralValue
+  | NoArgsFunction
+  | SerializableArray
+  | SerializableRecord;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NoArgsFunction = (...args: never[]) => any;
+
+type SerializableArray = readonly SerializableValue[];
+
+type SerializableRecord = {
+  readonly [key: number | string]: SerializableValue;
+};
+
+/**
+ * @package
+ */
+type BuildHandler = (...args: LiteralValue[]) => SerializableValue;
+
+/**
+ * Shape for statically binding `import.meta.*` accesses at build time.
+ *
+ * - `define`: Map a dotted access path to a serializable value that inlines
+ *   directly when encountered (e.g. `{ env: { MODE: "production" } }`).
+ *   Functions are emitted as-is and must not rely on runtime arguments.
+ * - `build`: Map a dotted method path to a function executed during the
+ *   transform. Arguments at the call site must be literals. The return value
+ *   must be serializable with the same rules as `define`.
+ *
+ * Example
+ * ```ts
+ * import type { ImportMetaBindings } from 'unplugin-transform-import-meta'
+ *
+ * const bindings: ImportMetaBindings = {
+ *   define: {
+ *     APP_NAME: 'my-app',
+ *     'env.MODE': 'production',
+ *     modules: {z
+ *       './dir/foo.js': async () => import('./dir/foo.js'),
+ *     },
+ *   },
+ *   build: {
+ *     version: (v) => `v${v}`,
+ *     asset: (p) => ({ url: `/static/${p}` }),
+ *   },
+ * }
+ * // input
+ * //   console.log(import.meta.APP_NAME)
+ * //   console.log(import.meta.version('1.2.3'))
+ * //   console.log(import.meta.modules['./dir/foo.js']())
+ * // output
+ * //   console.log('my-app')
+ * //   console.log('v1.2.3')
+ * //   console.log((async () => import('./dir/foo.js'))())
+ * ```
+ */
+export interface UserImportMetaBindings {
+  build?: Record<string, BuildHandler | undefined>;
+  define?: Record<string, SerializableValue | undefined>;
+}
+
+/**
+ * Normalized form used internally after option resolution.
+ *
+ * @internal
+ */
+export interface ImportMetaBindings {
+  readonly build: Readonly<Record<string, BuildHandler>>;
+  readonly define: Readonly<Record<string, string>>;
+}
 
 /**
  * @package
@@ -15,51 +95,4 @@ export interface TextReplacement {
   end: number;
   replacement: string;
   start: number;
-}
-
-/**
- * @package
- */
-/**
- * Shape for statically binding `import.meta.*` accesses at build time.
- *
- * - `values`: map a dotted access path to a literal that will be inlined.
- *   For example, `{ "env.MODE": "production" }` turns
- *   `import.meta.env.MODE` into `"production"` in the output.
- * - `functions`: map a dotted method path to a function that returns a
- *   literal. Arguments passed at the call site must be literals; any
- *   non-literal argument is passed to your function as `null` and a warning
- *   is reported during transformation.
- *
- * Example
- * ```ts
- * import type { ImportMetaBindings } from 'unplugin-transform-import-meta'
- *
- * const bindings: ImportMetaBindings = {
- *   values: {
- *     APP_NAME: 'my-app',
- *     'env.MODE': 'production',
- *     'config.database.host': 'localhost',
- *   },
- *   functions: {
- *     version: (v) => `v${v}`,
- *     asset: (p) => `/static/${p}`,
- *     'utils.resolve': (p) => `/resolved/${p}`,
- *   },
- * }
- * // input
- * //   console.log(import.meta.APP_NAME)
- * //   console.log(import.meta.version('1.2.3'))
- * //   console.log(import.meta.utils.resolve('a/b'))
- * // output
- * //   console.log('my-app')
- * //   console.log('v1.2.3')
- * //   console.log('/resolved/a/b')
- * ```
- */
-export interface ImportMetaBindings {
-  /** Dotted access path → function (e.g. "resolve", "utils.resolve"). */
-  functions: Record<string, MethodFunction>;
-  /** Dotted access path → literal value (e.g. "env", "config.database.host"). */
-  values: Record<string, LiteralValue>;
 }

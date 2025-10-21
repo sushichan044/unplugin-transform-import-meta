@@ -11,11 +11,7 @@ import type {
 } from "./types";
 
 import { isNonEmptyString } from "../utils/string";
-import {
-  includesImportMeta,
-  isLiteralValue,
-  serializeLiteralValue,
-} from "./utils";
+import { includesImportMeta, trySerializeValue } from "./utils";
 
 interface AnalysisError {
   end: number;
@@ -99,26 +95,12 @@ export function analyzeTypeScript(
 
         if (
           !isNonEmptyString(accessPath) ||
-          bindings.values?.[accessPath] == null
+          bindings.define[accessPath] == null
         ) {
           return;
         }
 
-        const value = bindings.values[accessPath];
-        if (!isLiteralValue(value)) {
-          errors.push({
-            end,
-            message: `Value for import.meta.${accessPath} is not a valid literal`,
-            meta: {
-              accessPath,
-              valueType: typeof value,
-            },
-            start,
-          });
-          return;
-        }
-
-        const replacement = serializeLiteralValue(value);
+        const replacement = bindings.define[accessPath];
         replacements.push({
           end,
           replacement,
@@ -142,14 +124,16 @@ export function analyzeTypeScript(
         }
 
         const methodPath = getAccessPath(node.callee);
-        if (
-          !isNonEmptyString(methodPath) ||
-          bindings.functions?.[methodPath] == null
-        ) {
+        if (!isNonEmptyString(methodPath)) {
           return;
         }
 
-        const literalArgs: Array<LiteralValue | null> = [];
+        const handler = bindings.build[methodPath];
+        if (handler == null) {
+          return;
+        }
+
+        const literalArgs: LiteralValue[] = [];
         let hasNonLiteralArg = false;
         for (const [index, arg] of node.arguments.entries()) {
           if (arg.type === "Literal") {
@@ -158,7 +142,6 @@ export function analyzeTypeScript(
           }
 
           hasNonLiteralArg = true;
-          literalArgs.push(null);
           const [argStart, argEnd] = getRange(arg);
           errors.push({
             end: argEnd,
@@ -176,28 +159,9 @@ export function analyzeTypeScript(
 
         const [callStart, callEnd] = getRange(node);
 
+        let rawResult: ReturnType<typeof handler>;
         try {
-          const value = bindings.functions[methodPath](...literalArgs);
-
-          if (!isLiteralValue(value)) {
-            errors.push({
-              end: callEnd,
-              message: `Return value of method import.meta.${methodPath}() is not a valid literal`,
-              meta: {
-                method: methodPath,
-                returnValue: value,
-              },
-              start: callStart,
-            });
-            return;
-          }
-
-          const replacement = serializeLiteralValue(value);
-          replacements.push({
-            end: callEnd,
-            replacement,
-            start: callStart,
-          });
+          rawResult = handler(...literalArgs);
         } catch (error) {
           errors.push({
             end: callEnd,
@@ -210,6 +174,29 @@ export function analyzeTypeScript(
             start: callStart,
           });
           return;
+        }
+
+        try {
+          const replacement = trySerializeValue(
+            rawResult,
+            methodPath.split("."),
+          );
+          replacements.push({
+            end: callEnd,
+            replacement,
+            start: callStart,
+          });
+        } catch (error) {
+          errors.push({
+            end: callEnd,
+            message: `Return value of import.meta.${methodPath}() is not serializable: ${String(
+              error,
+            )}`,
+            meta: {
+              method: methodPath,
+            },
+            start: callStart,
+          });
         }
       },
     },

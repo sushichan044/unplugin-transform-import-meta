@@ -1,21 +1,26 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import type { ImportMetaBindings } from "./types";
+import type { UserImportMetaBindings } from "./types";
 
 import { analyzeTypeScript } from "./analyze";
+import { normalizeBindings } from "./options";
 import { applyReplacements } from "./utils";
+
+function createBindings(input: UserImportMetaBindings) {
+  return normalizeBindings(input);
+}
 
 describe("analyzeTypeScript", () => {
   describe("no-op", () => {
     it("should not generate replacements when code does not include MetaProperty", () => {
       const code = "const foo = not_import.meta.foo;";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {},
-        values: { foo: true },
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          define: { foo: true },
+        }),
+      );
       expect(result.replacements).toHaveLength(0);
     });
   });
@@ -23,14 +28,14 @@ describe("analyzeTypeScript", () => {
   describe("MemberExpression processing", () => {
     it("should transform simple property access", () => {
       const code = "const foo = import.meta.foo;";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {},
-        values: {
-          foo: true,
-        },
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          define: {
+            foo: true,
+          },
+        }),
+      );
       expect(result.replacements).toHaveLength(1);
       const transformed = applyReplacements(code, result.replacements);
 
@@ -39,27 +44,27 @@ describe("analyzeTypeScript", () => {
 
     it("should not transform unknown properties", () => {
       const code = "const unknown = import.meta.unknown;";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {},
-        values: {
-          foo: true,
-        },
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          define: {
+            foo: true,
+          },
+        }),
+      );
       expect(result.replacements).toHaveLength(0);
     });
 
     it("should transform import.meta in function arguments", () => {
       const code = "console.log(import.meta.env);";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {},
-        values: {
-          env: "production",
-        },
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          define: {
+            env: "production",
+          },
+        }),
+      );
       expect(result.replacements).toHaveLength(1);
 
       const transformed = applyReplacements(code, result.replacements);
@@ -68,14 +73,14 @@ describe("analyzeTypeScript", () => {
 
     it("should handle nested property access", () => {
       const code = "const nested = import.meta.config.database.host;";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {},
-        values: {
-          "config.database.host": "localhost",
-        },
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          define: {
+            "config.database.host": "localhost",
+          },
+        }),
+      );
       expect(result.replacements).toHaveLength(1);
 
       const transformed = applyReplacements(code, result.replacements);
@@ -86,30 +91,62 @@ describe("analyzeTypeScript", () => {
 
     it("should handle regular expressions", () => {
       const code = "const a = import.meta.a;";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {},
-        values: { a: /regex/ },
-      };
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          define: { a: /regex/ },
+        }),
+      );
       expect(result.replacements).toHaveLength(1);
 
       const transformed = applyReplacements(code, result.replacements);
       expect(transformed).toMatchInlineSnapshot(`"const a = /regex/;"`);
+    });
+
+    it("should reject object define values with non-identifier keys", () => {
+      expect(() =>
+        createBindings({
+          define: {
+            modules: {
+              "./dir/bar.js": () => "bar",
+              "./dir/foo.js": async () => Promise.resolve("foo"),
+            },
+          },
+        }),
+      ).toThrow(AggregateError);
+    });
+
+    it("should inline zero-argument function define values", () => {
+      const code = "const factory = import.meta.factory;";
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          define: {
+            factory: () => ({ message: "ok" }),
+          },
+        }),
+      );
+
+      expect(result.replacements).toHaveLength(1);
+      const transformed = applyReplacements(code, result.replacements);
+      expect(transformed).toMatchInlineSnapshot(
+        '"const factory = (/*#__PURE__*/(() => ({ message: \"ok\" })));"',
+      );
     });
   });
 
   describe("CallExpression processing - method calls", () => {
     it("should transform method calls with literal arguments", () => {
       const code = "const resolvedPath = import.meta.resolve('./file');";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {
-          resolve: (p: bigint | boolean | number | string | RegExp | null) =>
-            path.join("resolved", String(p)),
-        },
-        values: {},
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          build: {
+            resolve: (p: bigint | boolean | number | string | RegExp | null) =>
+              path.join("resolved", String(p)),
+          },
+        }),
+      );
       expect(result.replacements).toHaveLength(1);
 
       const transformed = applyReplacements(code, result.replacements);
@@ -120,16 +157,16 @@ describe("analyzeTypeScript", () => {
 
     it("should handle nested method calls", () => {
       const code = "const resolvedPath = import.meta.utils.resolve('./test');";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {
-          "utils.resolve": (
-            p: bigint | boolean | number | string | RegExp | null,
-          ) => path.join("resolved", String(p)),
-        },
-        values: {},
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          build: {
+            "utils.resolve": (
+              p: bigint | boolean | number | string | RegExp | null,
+            ) => path.join("resolved", String(p)),
+          },
+        }),
+      );
       expect(result.replacements).toHaveLength(1);
 
       const transformed = applyReplacements(code, result.replacements);
@@ -141,21 +178,62 @@ describe("analyzeTypeScript", () => {
     // TODO: remove todo if template literal handling is implemented
     it.todo("should handle literal-only TemplateLiterals", () => {
       const code = "const resolvedPath = import.meta.resolve(`./file-raw`);";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {
-          resolve: (p: bigint | boolean | number | string | RegExp | null) =>
-            path.join("resolved", String(p)),
-        },
-        values: {},
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          build: {
+            resolve: (p: bigint | boolean | number | string | RegExp | null) =>
+              path.join("resolved", String(p)),
+          },
+        }),
+      );
       expect(result.replacements).toHaveLength(1);
 
       const transformed = applyReplacements(code, result.replacements);
       expect(transformed).toMatchInlineSnapshot(
         `"const resolvedPath = "resolved/file-raw";"`,
       );
+    });
+
+    it("should inline build results returning complex structures", () => {
+      const code = "const data = import.meta.load('./file');";
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          build: {
+            load: (id) => ({
+              id,
+              meta: { cached: true },
+              modules: ["a", "b"],
+            }),
+          },
+        }),
+      );
+
+      expect(result.replacements).toHaveLength(1);
+      const transformed = applyReplacements(code, result.replacements);
+      expect(transformed).toBe(
+        'const data = { id: "./file", meta: { cached: true }, modules: ["a", "b"] };',
+      );
+    });
+
+    it("should report when build result is not serializable", () => {
+      const code = "const data = import.meta.load('./file');";
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          build: {
+            // @ts-expect-error runtime validation
+            load: () => new Date(),
+          },
+        }),
+      );
+
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]?.message).toContain(
+        "Return value of import.meta.load() is not serializable",
+      );
+      expect(result.replacements).toHaveLength(0);
     });
 
     it("should generate errors for non-literal arguments", () => {
@@ -165,19 +243,19 @@ const resolved = import.meta.resolve(variableArg);
 const mixed = import.meta.glob("literal", someVar, 123);
       `.trim();
 
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {
-          glob: (
-            ...args: Array<bigint | boolean | number | string | RegExp | null>
-          ) => `globbed:${args.join(",")}`,
-          resolve: (
-            pathArg: bigint | boolean | number | string | RegExp | null,
-          ) => `resolved:${String(pathArg)}`,
-        },
-        values: {},
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          build: {
+            glob: (
+              ...args: Array<bigint | boolean | number | string | RegExp | null>
+            ) => `globbed:${args.join(",")}`,
+            resolve: (
+              pathArg: bigint | boolean | number | string | RegExp | null,
+            ) => `resolved:${String(pathArg)}`,
+          },
+        }),
+      );
 
       expect(result.errors).toMatchInlineSnapshot(`
         [
@@ -207,41 +285,45 @@ const mixed = import.meta.glob("literal", someVar, 123);
 
     it("should not transform unknown methods", () => {
       const code = "const result = import.meta.unknownMethod('./test');";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {
-          resolve: (path: bigint | boolean | number | string | RegExp | null) =>
-            `resolved:${path}`,
-        },
-        values: {},
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          build: {
+            resolve: (
+              path: bigint | boolean | number | string | RegExp | null,
+            ) => `resolved:${path}`,
+          },
+        }),
+      );
 
       expect(result.replacements).toHaveLength(0);
     });
 
     it("should handle non-MemberExpression callees", () => {
       const code = "const result = resolve('./test');";
-      const ImportMetaBindings: ImportMetaBindings = {
-        functions: {
-          resolve: (path: bigint | boolean | number | string | RegExp | null) =>
-            `resolved:${path}`,
-        },
-        values: {},
-      };
-
-      const result = analyzeTypeScript(code, ImportMetaBindings);
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          build: {
+            resolve: (
+              path: bigint | boolean | number | string | RegExp | null,
+            ) => `resolved:${path}`,
+          },
+        }),
+      );
       expect(result.replacements).toHaveLength(0);
     });
 
     it("should skip traversal on syntax error if surfaced any parser errors", () => {
       const code = "const x = ; const y = import.meta.foo;";
-      const result = analyzeTypeScript(code, {
-        functions: {},
-        values: {
-          foo: true,
-        },
-      });
+      const result = analyzeTypeScript(
+        code,
+        createBindings({
+          define: {
+            foo: true,
+          },
+        }),
+      );
       expect(result.parserDiagnostics.some((d) => d.severity === "error")).toBe(
         true,
       );

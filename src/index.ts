@@ -3,6 +3,7 @@ import type { UnpluginInstance } from "unplugin";
 import { createUnplugin } from "unplugin";
 
 import type { Options } from "./core";
+import type { ImportMetaBindings } from "./core";
 
 import {
   createProcessor,
@@ -13,7 +14,7 @@ import {
 } from "./core";
 
 export type { Options } from "./core";
-export type { ImportMetaBindings } from "./core";
+export type { UserImportMetaBindings } from "./core";
 
 const pluginName = "unplugin-transform-import-meta";
 
@@ -39,10 +40,7 @@ export const TransformImportMeta: UnpluginInstance<Options | undefined, false> =
           },
         },
         async handler(this, code, id) {
-          if (
-            Object.keys(options.bindings.functions).length === 0 &&
-            Object.keys(options.bindings.values).length === 0
-          ) {
+          if (isBindingsEmpty(options.bindings)) {
             return;
           }
 
@@ -111,5 +109,12 @@ export const TransformImportMeta: UnpluginInstance<Options | undefined, false> =
       },
     };
   });
+
+function isBindingsEmpty(bindings: ImportMetaBindings): boolean {
+  return (
+    Object.keys(bindings.build).length === 0 &&
+    Object.keys(bindings.define).length === 0
+  );
+}
 
 export default TransformImportMeta;

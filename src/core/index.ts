@@ -3,5 +3,5 @@ export { createProcessor, detectLanguage } from "./languages";
 export { resolveOptions } from "./options";
 export type { Options, OptionsResolved } from "./options";
 export { createReservedAssertion } from "./reserved";
-export type { ImportMetaBindings } from "./types";
+export type { UserImportMetaBindings } from "./types";
 export { isLiteralValue } from "./utils";

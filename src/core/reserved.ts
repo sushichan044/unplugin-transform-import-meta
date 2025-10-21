@@ -18,10 +18,7 @@ export function createReservedAssertion(
   bindings: ImportMetaBindings,
 ): ReservedAsserter {
   const inputProperties = Array.from(
-    new Set([
-      ...Object.keys(bindings.functions),
-      ...Object.keys(bindings.values),
-    ]),
+    new Set([...Object.keys(bindings.build), ...Object.keys(bindings.define)]),
   );
 
   return {

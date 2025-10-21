@@ -1,12 +1,13 @@
 import type { Node, RegExpLiteral } from "oxc-parser";
 
+import { Result } from "@praha/byethrow";
 import { parseSync } from "oxc-parser";
 import { describe, expect, it } from "vitest";
 import { walk } from "zimmerframe";
 
 import type { LiteralValue } from "./types";
 
-import { serializeLiteralValue } from "./utils";
+import { serializeLiteralValue, trySerializeValue } from "./utils";
 
 describe("serializeLiteralValue", () => {
   describe("JSON primitive serialization", () => {
@@ -97,24 +98,58 @@ describe("serializeLiteralValue", () => {
       );
     });
   });
+});
 
-  describe("error cases", () => {
-    const tc = [
-      undefined,
-      {},
-      [],
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      () => {},
-      Symbol("symbol"),
-      NaN,
-      Infinity,
-      -Infinity,
-    ];
+describe("serializeSerializableValue", () => {
+  it("should serialize arrays recursively", () => {
+    const res = trySerializeValue([1, "a", true, /re/, null]);
 
-    it.each(tc)("should throw TypeError when value is %s", (value) => {
-      expect(() =>
-        serializeLiteralValue(value as unknown as LiteralValue),
-      ).toThrow(TypeError);
+    expect(Result.unwrap(res)).toBe('[1, "a", true, /re/, null]');
+  });
+
+  it("should serialize plain objects recursively", () => {
+    const res = trySerializeValue({
+      api: {
+        baseUrl: "/api",
+        headers: {
+          Accept: "application/json",
+        },
+        retryCount: 3n,
+      },
     });
+
+    expect(Result.unwrap(res)).toBe(
+      '{ api: { baseUrl: "/api", headers: { Accept: "application/json" }, retryCount: 3n } }',
+    );
+  });
+
+  it("should wrap zero-argument functions with PURE annotation", () => {
+    const fn = () => "ok";
+    const res = trySerializeValue(fn);
+
+    expect(Result.unwrap(res)).toBe('(/*#__PURE__*/(() => "ok"))');
+  });
+
+  it("should throw for non-serializable values", () => {
+    const res = trySerializeValue(new Date() as never);
+
+    expect(Result.unwrapError(res)).toBe("UNSUPPORTED_VALUE_TYPE");
+  });
+
+  it("should aggregate invalid object keys", () => {
+    expect(() => trySerializeValue({ "not-valid": 1 } as never)).toThrow(
+      AggregateError,
+    );
+  });
+
+  it("should throw when function declares parameters", () => {
+    const withArg = (value: unknown) => value;
+    expect(() => trySerializeValue(withArg as never)).toThrow(TypeError);
+  });
+
+  it("should detect object cycles", () => {
+    const loop: Record<string, unknown> = {};
+    loop["self"] = loop;
+    expect(() => trySerializeValue(loop as never)).toThrow(TypeError);
   });
 });
